@@ -234,6 +234,7 @@ def plot_confusion_matrix(cm, classes, output, save_path, model_name, fold,
     plt.ylabel('True label', weight = 'bold')
     plt.xlabel('Predicted label', weight = 'bold')
     plt.savefig((save_path + "Confusion_Matrix_" + model_name + "_" + fold +"_"+ ".png"), dpi = 500, bbox_inches="tight")
+    plt.savefig((save_path + "Confusion_Matrix_" + model_name + "_" + fold +"_"+ ".pdf"), dpi = 500, bbox_inches="tight")
     plt.close()
 
 #%%
@@ -281,6 +282,7 @@ def graph_history(history, model_name, model_ver_num, fold, save_path):
         plt.xlabel("epoch", weight = 'bold')
         plt.ylabel(i)
         plt.savefig(save_path +model_name+"_"+str(model_ver_num)+"_"+str(fold)+"_"+i + ".png", dpi = 500, bbox_inches="tight")
+        plt.savefig(save_path +model_name+"_"+str(model_ver_num)+"_"+str(fold)+"_"+i + ".pdf", dpi = 500, bbox_inches="tight")
         plt.close()
 
 #%%
@@ -661,9 +663,9 @@ train_model = True
 
 # Name a folder for the outputs to go into
 
-savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens")            
+savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_newpub")            
 build_folder(savedir, True)
-savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\l")            
+savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_newpub\l")            
 
 # start model training on standardized data
    
@@ -744,6 +746,7 @@ for train_index, test_index in kf.split(features):
     for pred, tru in zip(y_predicted, y_test):
         save_predicted.append(pred)
         save_true.append(tru)
+
 
     # Plotting confusion matrix for each fold/iteration
 
@@ -912,7 +915,7 @@ labels_default_val, classes_default_val = [age_group_val], [age_group_classes_va
 
 # load model trained with PCA transformed data from the disk 
 
-reconstracted_model = tf.keras.models.load_model("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\lCNN_0_3_Model.h5")
+reconstracted_model = tf.keras.models.load_model("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_newpub\lCNN_0_3_Model.h5")
 
 # change the dimension of y_test to array
 y_validation = np.asarray(labels_default_val)
