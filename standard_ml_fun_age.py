@@ -1,6 +1,6 @@
 #%%
 # This program uses standard machine learning to predict the age structure of 
-# of Anopheles arabiensis mosquitoes reared in different insectaries (Ifakara and Glasgow)
+# of Anopheles funestus mosquitoes collected from the wild
 
 # Principal component analysis is used to reduce the dimensionality of the data
 
@@ -14,6 +14,7 @@ import itertools
 import collections
 from time import time
 from tqdm import tqdm
+import pickle
 
 from itertools import cycle
 import datetime
@@ -33,6 +34,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 from imblearn.under_sampling import RandomUnderSampler
 
 from sklearn import decomposition
+from sklearn import manifold
 from sklearn.feature_selection import SelectKBest, chi2, mutual_info_classif, f_classif
 from mlxtend.feature_selection import SequentialFeatureSelector
 from mlxtend.feature_selection import ExhaustiveFeatureSelector
@@ -41,21 +43,24 @@ from sklearn.pipeline import Pipeline
 
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
+from sklearn.neural_network import BernoulliRBM
 from xgboost import XGBClassifier
+from catboost import CatBoostClassifier
 
 from matplotlib import pyplot
 import matplotlib.pyplot as plt # for making plots
 import seaborn as sns
-sns.set(context="paper",
-        style="whitegrid",
-        palette="deep",
-        font_scale=2.0,
-        color_codes=True,
-        rc=None)
-%matplotlib inline
+sns.set(context = "paper",
+        style = "whitegrid",
+        palette = "deep",
+        font_scale = 2.0,
+        color_codes = True,
+        rc = ({'font.family': 'Helvetica'}))
+# %matplotlib inline
 plt.rcParams["figure.figsize"] = [6,4]
 
 #%%
@@ -88,7 +93,7 @@ def plot_confusion_matrix(cm, classes,
     plt.figure(figsize=(6,4))
 
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title)
+    # plt.title(title)
     plt.colorbar()
     classes = classes
     tick_marks = np.arange(len(classes))
@@ -105,7 +110,8 @@ def plot_confusion_matrix(cm, classes,
     plt.tight_layout()
     plt.ylabel('True label', weight = 'bold')
     plt.xlabel('Predicted label', weight = 'bold')
-    plt.savefig(("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Confusion_Matrix_" + figure_name + "_" + ".png"), dpi = 500, bbox_inches="tight")
+    # plt.show()
+    plt.savefig(("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\Confusion_Matrix_" + figure_name + "_" + ".png"), dpi = 500, bbox_inches="tight")
    
 
 #%%
@@ -121,7 +127,7 @@ def visualize(figure_name, classes, predicted, true):
     classes_true = np.asarray(true)
     print(classes_pred.shape)
     print(classes_true.shape)
-    classes = ['1 - 5', '6 - 10', '11 - 16']
+    classes = ['1 - 9', '10 - 16']
     cnf_matrix = confusion_matrix(classes_true, classes_pred, labels = classes)
     plot_confusion_matrix(cnf_matrix, classes)
 
@@ -131,7 +137,7 @@ def visualize(figure_name, classes, predicted, true):
 # Loading dataset for prediction 
 # Upload An. funestus train data for model training
 
-train_data = pd.read_csv("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\set_to_train_an_fun.csv")
+train_data = pd.read_csv("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\set_to_train_an_fun_new.csv")
 print(train_data.head())
 
 print(train_data.shape)
@@ -213,13 +219,10 @@ Age_group = []
 
 for row in train_data['Age']:
     if row <= 5:
-        Age_group.append('1 - 5')
-    
-    elif row > 5 and row <= 10:
-        Age_group.append('6 - 10')
+        Age_group.append('1 - 9')
 
     else:
-        Age_group.append('11 - 16')
+        Age_group.append('10 - 16')
 
 print(Age_group)
 
@@ -233,7 +236,7 @@ train_data.head(5)
 
 # define parameters
 num_folds = 5 # split data into five folds
-seed = 4 # seed value
+seed = 42 # seed value
 scoring = 'accuracy' # metric for model evaluation
 
 # specify cross-validation strategy
@@ -242,10 +245,22 @@ kf = KFold(n_splits = num_folds, shuffle = True, random_state = seed)
 # make a list of models to test
 models = []
 models.append(('KNN', KNeighborsClassifier()))
-models.append(('LR', LogisticRegressionCV(multi_class = 'auto', cv = kf, max_iter = 500, random_state = seed)))
-models.append(('SVM', SVC(kernel = 'rbf', gamma = 'auto', random_state = seed)))
+models.append(('LR', LogisticRegressionCV(multi_class = 'ovr', cv = kf, max_iter = 500, random_state = seed)))
+models.append(('SVM', SVC(kernel = 'linear', random_state = seed)))
 models.append(('RF', RandomForestClassifier(n_estimators = 1000, random_state = seed)))
-models.append(('XGB', XGBClassifier(random_state = seed, n_estimators = 1000)))
+models.append(('XGBoost', XGBClassifier(random_state = seed, n_estimators = 1000)))
+models.append(('DT', DecisionTreeClassifier(random_state = seed)))
+models.append(('MLP', MLPClassifier(hidden_layer_sizes = 500, activation = 'logistic', 
+                                    solver = 'sgd', alpha = 0.01, learning_rate_init = .01,
+                                    max_iter = 3000, early_stopping = True)))
+# models.append(('CatXGB', CatBoostClassifier(
+#                            depth = 2,
+#                            learning_rate = 0.01,
+#                            loss_function = 'Logloss',
+#                            n_estimators = 1000,
+#                            verbose=False)))
+
+
 
 
 #%%
@@ -255,40 +270,23 @@ y = train_data["Age_group"]
 print('shape of X : {}'.format(X.shape))
 print('shape of y : {}'.format(y.shape))
 
-# standardize inputs
+# standardize inputs and transform them into lower dimension
 
-X_new = StandardScaler().fit_transform(X)
+# A pipeline containing standardization and PCA algorithm
+
+pca_pipe = Pipeline([('scaler', StandardScaler()),
+                      ('pca', decomposition.KernelPCA(n_components = 8, kernel = 'linear'))])
+
+# Transform data into  principal componets 
+
+#%%
+age_pca = pca_pipe.fit_transform(X)
+print('First five observation : {}'.format(age_pca[:5]))
+
 
 #%%
 
-# feature selection filter methods
-
-
-fs = SelectKBest(score_func = f_classif, k = 100)
-fit = fs.fit(X_new, y)
-
-# Create df for scores
-dfscores = pd.DataFrame(fit.scores_)
-
-# Create df for column names
-dfcolumns = pd.DataFrame(train_data.columns)
-
-# Concat two dataframes for better visualization 
-featureScores = pd.concat([dfcolumns, dfscores], axis=1)
-
-# Naming the dataframe columns
-featureScores.columns = ['Selected_columns','Score_ANOVA'] 
-
-# Print 10 best features
-print(featureScores.nlargest(100,'Score_ANOVA'))
-
-
-#%%
-# Evaluate models to get the best perfoming model
-
-X_train_fs = fs.fit_transform(X_new, y)
-
-X = np.asarray(X_train_fs)
+X = np.asarray(age_pca)
 y = np.asarray(y)
 print(np.unique(y))
 
@@ -323,92 +321,82 @@ plt.figure(figsize = (6, 4))
 sns.boxplot(x = names, y = results, width = .4)
 sns.despine(offset = 10, trim = True)
 plt.xticks(rotation = 90)
-plt.yticks()
-plt.ylim(top = 1.0, bottom = 0.4)
+plt.yticks((0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0))
+plt.ylim(ymin = 0.4, ymax = 1.0)
 plt.ylabel('Accuracy', weight = 'bold')
 plt.tight_layout()
+# plt.show()
+plt.savefig("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\_algorithm_sel_", dpi = 500, bbox_inches="tight")
 
 #%%
-def learning_curve_XGB():
-    print()
-    print('**How we can visualise XGBoost model with learning curves**')
+# def learning_curve_XGB():
+#     print()
+#     print('**How we can visualise XGBoost model with learning curves**')
 
 
-    # # load data
-    # dataset = loadtxt('pima.indians.diabetes.data.csv', delimiter=",")
+#     # # load data
+#     # dataset = loadtxt('pima.indians.diabetes.data.csv', delimiter=",")
 
-    # # split data into X and y
-    # X = dataset[:,0:8]
-    # Y = dataset[:,8]
+#     # # split data into X and y
+#     # X = dataset[:,0:8]
+#     # Y = dataset[:,8]
 
-    # split data into train and test sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.1, random_state=4)
+#     # split data into train and test sets
+#     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.1, random_state=4)
 
-    # fit model no training data
-    model = XGBClassifier(random_state = seed, n_estimators = 1000)
-    eval_set = [(X_train, y_train), (X_test, y_test)]
-    model.fit(X_train, y_train, early_stopping_rounds=50, eval_metric=["merror", "mlogloss"], eval_set=eval_set, verbose=True)
+#     # fit model no training data
+#     model = XGBClassifier(random_state = seed, n_estimators = 1000)
+#     eval_set = [(X_train, y_train), (X_test, y_test)]
+#     model.fit(X_train, y_train, early_stopping_rounds=50, eval_metric=["merror", "mlogloss"], eval_set=eval_set, verbose=True)
 
-    # make predictions for test data
-    y_pred = model.predict(X_test)
-    # predictions = [round(value) for value in y_pred]
+#     # make predictions for test data
+#     y_pred = model.predict(X_test)
+#     # predictions = [round(value) for value in y_pred]
 
-    # evaluate predictions
-    accuracy = accuracy_score(y_test, y_pred)
-    print("Accuracy: %.2f%%" % (accuracy * 100.0))
+#     # evaluate predictions
+#     accuracy = accuracy_score(y_test, y_pred)
+#     print("Accuracy: %.2f%%" % (accuracy * 100.0))
 
-    # retrieve performance metrics
-    results = model.evals_result()
-    epochs = len(results['validation_0']['merror'])
-    x_axis = range(0, epochs)
+#     # retrieve performance metrics
+#     results = model.evals_result()
+#     epochs = len(results['validation_0']['merror'])
+#     x_axis = range(0, epochs)
 
-    # plot log loss
-    fig, ax = pyplot.subplots(figsize=(12,12))
-    ax.plot(x_axis, results['validation_0']['mlogloss'], label='Train')
-    ax.plot(x_axis, results['validation_1']['mlogloss'], label='Test')
-    ax.legend()
-    pyplot.ylabel('Log Loss')
-    pyplot.title('XGBoost Log Loss')
-    pyplot.show()
+#     # plot log loss
+#     fig, ax = pyplot.subplots(figsize=(12,12))
+#     ax.plot(x_axis, results['validation_0']['mlogloss'], label='Train')
+#     ax.plot(x_axis, results['validation_1']['mlogloss'], label='Test')
+#     ax.legend()
+#     pyplot.ylabel('Log Loss')
+#     pyplot.title('XGBoost Log Loss')
+#     pyplot.show()
 
-    # plot classification error
-    fig, ax = pyplot.subplots(figsize=(12,12))
-    ax.plot(x_axis, results['validation_0']['merror'], label='Train')
-    ax.plot(x_axis, results['validation_1']['merror'], label='Test')
-    ax.legend()
-    pyplot.ylabel('Classification Error')
-    pyplot.title('XGBoost Classification Error')
-    pyplot.show()
+#     # plot classification error
+#     fig, ax = pyplot.subplots(figsize=(12,12))
+#     ax.plot(x_axis, results['validation_0']['merror'], label='Train')
+#     ax.plot(x_axis, results['validation_1']['merror'], label='Test')
+#     ax.legend()
+#     pyplot.ylabel('Classification Error')
+#     pyplot.title('XGBoost Classification Error')
+#     pyplot.show()
 
-learning_curve_XGB()
-
-#%%
-
-# feauture selection with wrapper methods
-
-feature_selector = ExhaustiveFeatureSelector(XGBClassifier(n_estimators = 100),
-           min_features = 1,
-           max_features = 4,
-           scoring = 'accuracy',
-           print_progress = True,
-           cv = kf)
-
-features = feature_selector.fit(X_new, y)
-
-#%%
-filtered_features= X_new.columns[list(features.k_feature_idx_)]
-filtered_features
+# learning_curve_XGB()
 
 
 #%%
 # train XGB classifier and tune its hyper-parameters with randomized grid search 
 
-# X = np.asarray(X_train_fs)
-# y = np.asarray(y)
-# print(np.unique(y))
+print(np.unique(y))
 
 num_rounds = 5
 classifier = XGBClassifier(n_estimators = 100)
+
+# classifier = RandomForestClassifier(n_estimators = 1000, random_state = seed)
+
+# # classifier = MLPClassifier(hidden_layer_sizes = 500, activation = 'logistic', 
+#                                     solver = 'sgd', alpha = 0.01, learning_rate_init = .1,
+#                                     max_iter = 3000, early_stopping = True)
+
 
 # set hyparameter
 
@@ -433,7 +421,7 @@ save_true = [] # save true values for plotting averaged confusion matrix
 start = time()
 
 for round in range(num_rounds):
-    SEED = np.random.randint(0, 81470108)
+    SEED = np.random.randint(0, 81470)
     
     for train_index, test_index in kf.split(X, y):
 
@@ -442,11 +430,19 @@ for round in range(num_rounds):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
-        # check the shape the splits
-        print(X_train.shape)
-        print(y_train.shape)
-        print(X_test.shape)
-        print(y_test.shape)
+        # split validation
+        # validation_size = 0.1
+        # X_train, X_val, y_train, y_val = train_test_split(X_train,
+        #                                  y_train, test_size = validation_size, random_state = seed)
+    
+
+        # Check the sizes of all newly created datasets
+        print("Shape of X_train:", X_train.shape)
+        # print("Shape of X_val:", X_val.shape)
+        print("Shape of X_test:", X_test.shape)
+        print("Shape of y_train:", y_train.shape)
+        # print("Shape of y_val:", y_val.shape)
+        print("Shape of y_test:", y_test.shape)
         
         # generate models using all combinations of settings
 
@@ -473,6 +469,9 @@ for round in range(num_rounds):
         classifier = XGBClassifier(nthread=1, seed=SEED, **rsCV_result.best_params_)
 
         # Fitting the best classifier
+        # eval_set = [(X_val, y_val)]
+        # classifier.fit(X_train, y_train, early_stopping_rounds=10, eval_metric="logloss", eval_set=eval_set, verbose=True)
+
         classifier.fit(X_train, y_train)
 
         # Predict X_test
@@ -486,12 +485,12 @@ for round in range(num_rounds):
 
         # summarize for plotting per class distribution
 
-        classes = ['1 - 5', '6 - 10', '11 - 16']
+        classes = ['1 - 9', '10 - 16']
         local_cm = confusion_matrix(y_test, y_pred, labels = classes)
         local_report = classification_report(y_test, y_pred, labels = classes)
 
         local_kf_results = pd.DataFrame([("Accuracy", accuracy_score(y_test, y_pred)),
-                                        ("params",str(rsCV_result.best_params_)),
+                                        # ("params",str(rsCV_result.best_params_)),
                                         ("TRAIN",str(train_index)),
                                         ("TEST",str(test_index)),
                                         ("CM", local_cm),
@@ -522,13 +521,13 @@ visualize(figure_name, classes, save_true, save_predicted)
 # %%
 # preparing dataframe for plotting per class accuracy
 
-classes = ['1 - 5', '6 - 10', '11 - 16']
+classes = ['1 - 9', '10 - 16']
 rf_per_class_acc_distrib = pd.DataFrame(kf_per_class_results, columns = classes)
-rf_per_class_acc_distrib.dropna().to_csv("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\_rf_per_class_acc_distrib.csv")
-rf_per_class_acc_distrib = pd.read_csv("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\_rf_per_class_acc_distrib.csv", index_col=0)
+rf_per_class_acc_distrib.dropna().to_csv("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\_rf_per_class_acc_distrib.csv")
+rf_per_class_acc_distrib = pd.read_csv("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\_rf_per_class_acc_distrib.csv", index_col=0)
 rf_per_class_acc_distrib = np.round(rf_per_class_acc_distrib, 1)
 rf_per_class_acc_distrib_describe = rf_per_class_acc_distrib.describe()
-rf_per_class_acc_distrib_describe.to_csv("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\_rf_per_class_acc_distrib.csv")
+rf_per_class_acc_distrib_describe.to_csv("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\_rf_per_class_acc_distrib.csv")
 
 #%%
 # plotting class distribution
@@ -537,31 +536,30 @@ sns.set(context = 'paper',
         palette = 'deep',
         font_scale = 2.0,
         color_codes = True,
-        rc = ({'font.family': 'Dejavu Sans'}))
+        rc = ({'font.family': 'Helvetica'}))
 
 plt.figure(figsize = (6, 4))
 
 rf_per_class_acc_distrib = pd.melt(rf_per_class_acc_distrib, var_name="Label new")
-g = sns.pointplot(x="Label new", y="value", join = False, hue = "Label new",
-                capsize = .1, scale= 4.5, errwidth = 4,
-                data = rf_per_class_acc_distrib)
+sns.violinplot(x = "Label new", y = "value", cut = 0, data = rf_per_class_acc_distrib)
 sns.despine(left=True)
+
 plt.xticks(ha="right")
 plt.yticks()
-plt.ylim(ymin=0.5, ymax=1.0)
+plt.ylim(ymin = 0.5, ymax = 1.0)
 plt.xlabel(" ")
-g.legend().set_visible(False)
 # plt.legend(' ', frameon = False)
-plt.ylabel("Prediction accuracy", weight = 'bold')
+plt.ylabel("Prediction accuracy\n ({0:.2f} ± {1:.2f})".format(rf_per_class_acc_distrib["value"].mean(),rf_per_class_acc_distrib["value"].sem()), weight="bold")
 plt.grid(False)
 plt.tight_layout()
-plt.savefig("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\_rf_per_class_acc_distrib.png", dpi = 500, bbox_inches="tight")
+# plt.show()
+plt.savefig("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\_rf_per_class_acc_distrib.png", dpi = 500, bbox_inches="tight")
 
 # %%
 
 # save the trained model to disk for future use
 
-with open('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\classifier.pkl', 'wb') as fid:
+with open('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\classifier.pkl', 'wb') as fid:
      pickle.dump(classifier, fid)
 
 
@@ -569,7 +567,7 @@ with open('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\classifier.pkl
 # Loading new dataset for prediction (Glasgow dataset)
 # start by loading the new test data 
 
-df_new = pd.read_csv("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\set_to_test_an_fun.csv")
+df_new = pd.read_csv("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\set_to_test_an_fun_new.csv")
 print(df_new.head())
 
 # Checking class distribution in the data
@@ -647,13 +645,9 @@ Age_group = []
 
 for row in df_new['Age']:
     if row <= 5:
-        Age_group.append('1 - 5')
-    
-    elif row > 5 and row <= 10:
-        Age_group.append('6 - 10')
-
+        Age_group.append('1 - 9')
     else:
-        Age_group.append('11 - 16')
+        Age_group.append('10 - 16')
 
 print(Age_group)
 
@@ -669,28 +663,22 @@ df_new.head(5)
 X_valid = df_new.iloc[:,:-1]
 y_valid = df_new["Age_group"]
 
-print('shape of X : {}'.format(X_valid.shape))
-print('shape of y : {}'.format(y_valid.shape))
+print('shape of X_valid : {}'.format(X_valid.shape))
+print('shape of y_valid : {}'.format(y_valid.shape))
 
 y_valid = np.asarray(y_valid)
 print(np.unique(y_valid))
 
-# tranform matrix of features with SelectKbest
+# tranform matrix of features with PCA 
 
-X_valid = StandardScaler().fit_transform(X_valid)
-# X_new
-
-age_valid = fs.fit_transform(X_valid, y_valid)
-print(age_valid)
-print('shape of age_valid : {}'.format(age_valid.shape))
-
-# transform X and y matrices as arrays
-
+age_valid = pca_pipe.fit_transform(X_valid)
+print('First five observation : {}'.format(age_valid[:5]))
+# transform age_valid as arrays
 age_valid = np.asarray(age_valid)
 
 #%%
 # loading the classifier from the disk
-with open('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\classifier.pkl', 'rb') as fid:
+with open('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\classifier.pkl', 'rb') as fid:
      classifier_loaded = pickle.load(fid)
 
 # generates output predictions based on the X_input passed
@@ -704,7 +692,7 @@ print("Accuracy:%.2f%%" %(accuracy * 100.0))
 
 # compute precision, recall and f-score metrics
 
-classes = ['1 - 5', '6 - 10', '11 - 16']
+classes = ['1 - 9', '10 - 16']
 cr_pca = classification_report(y_valid, predictions, labels = classes)
 print(cr_pca)
 
@@ -714,7 +702,7 @@ print(cr_pca)
 
 cr = pd.read_fwf(io.StringIO(cr_pca), header=0)
 cr = cr.iloc[1:]
-cr.to_csv('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\classification_report_.csv')
+cr.to_csv('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\classification_report_.csv')
 
 #%%
 
