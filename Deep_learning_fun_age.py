@@ -1,3 +1,5 @@
+#  # This program uses deep learning to predict the age structure of 
+# of Anopheles funestus mosquitoes collected from the wild
 
 #%%
 
@@ -216,7 +218,7 @@ def plot_confusion_matrix(cm, classes, output, save_path, model_name, fold,
     plt.figure(figsize=(6,4))
 
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title([title +' - '+ model_name])
+    # plt.title([title +' - '+ model_name])
     plt.colorbar()
     classes = classes[0]
     tick_marks = np.arange(len(classes))
@@ -273,7 +275,7 @@ def graph_history(history, model_name, model_ver_num, fold, save_path):
     not_validation = list(filtered)
     for i in not_validation:
         plt.figure(figsize=(6, 4))
-        plt.title(i+"/ "+"val_"+i)
+        # plt.title(i+"/ "+"val_"+i)
         plt.plot(history.history[i], label=i)
         plt.plot(history.history["val_"+i], label="val_"+i)
         plt.legend()
@@ -663,9 +665,9 @@ train_model = True
 
 # Name a folder for the outputs to go into
 
-savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_newpub")            
+savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_test")            
 build_folder(savedir, True)
-savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_newpub\l")            
+savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_test\l")            
 
 # start model training on standardized data
    
@@ -707,6 +709,7 @@ for train_index, test_index in kf.split(features):
     print("Shape of y_train:", y_train.shape)
     print("Shape of y_val:", y_val.shape)
     # print("Shape of y_test:", y_test.shape)
+    
 
     input_layer_dim = len(X[0])
 
@@ -737,6 +740,7 @@ for train_index, test_index in kf.split(features):
     # change the dimension of y_test to array
     y_test = np.asarray(y_test)
     y_test = np.squeeze(y_test) # remove any single dimension entries from the arrays
+
 
     print('y predicted shape', y_predicted.shape)
     print('y_test', y_test.shape)
@@ -915,7 +919,7 @@ labels_default_val, classes_default_val = [age_group_val], [age_group_classes_va
 
 # load model trained with PCA transformed data from the disk 
 
-reconstracted_model = tf.keras.models.load_model("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_newpub\lCNN_0_3_Model.h5")
+reconstracted_model = tf.keras.models.load_model("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_test\lCNN_0_3_Model.h5")
 
 # change the dimension of y_test to array
 y_validation = np.asarray(labels_default_val)
@@ -938,9 +942,9 @@ cr_pca = classification_report(np.argmax(y_validation, axis=-1), np.argmax(predi
 print(cr_pca)
 
 # save classification report to disk 
-# cr = pd.read_fwf(io.StringIO(cr_pca), header=0)
-# cr = cr.iloc[1:]
-# cr.to_csv('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA\classification_report.csv')
+cr = pd.read_fwf(io.StringIO(cr_pca), header=0)
+cr = cr.iloc[1:]
+cr.to_csv('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_test\classification_report.csv')
 
 #%%
 
