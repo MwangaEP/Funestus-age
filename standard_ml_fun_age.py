@@ -644,7 +644,7 @@ df_new.head(5)
 Age_group = []
 
 for row in df_new['Age']:
-    if row <= 5:
+    if row <= 9:
         Age_group.append('1 - 9')
     else:
         Age_group.append('10 - 16')
