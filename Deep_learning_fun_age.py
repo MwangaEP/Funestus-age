@@ -15,6 +15,7 @@ from tqdm import tqdm
 from itertools import cycle
 import pickle
 import datetime
+import json
 
 import numpy as np 
 import pandas as pd
@@ -217,7 +218,7 @@ def plot_confusion_matrix(cm, classes, output, save_path, model_name, fold,
     
     plt.figure(figsize=(6,4))
 
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.imshow(cm, interpolation='nearest', vmin = 0.2, vmax = 1.0, cmap = cmap)
     # plt.title([title +' - '+ model_name])
     plt.colorbar()
     classes = classes[0]
@@ -287,6 +288,112 @@ def graph_history(history, model_name, model_ver_num, fold, save_path):
         plt.savefig(save_path +model_name+"_"+str(model_ver_num)+"_"+str(fold)+"_"+i + ".pdf", dpi = 500, bbox_inches="tight")
         plt.close()
 
+# Graphing the averaged training and validation histories 
+ 
+# when plotting, smooth out the points by some factor (0.5 = rough, 0.99 = smooth)
+# method taken from `Deep Learning with Python` by François Chollet
+
+def smooth_curve(points, factor = 0.75):
+    smoothed_points = []
+    for point in points:
+        if smoothed_points:
+            previous = smoothed_points[-1]
+            smoothed_points.append(previous * factor + point * (1 - factor))
+        else:
+            smoothed_points.append(point)
+    return smoothed_points
+
+
+def set_plot_history_data(ax, history, which_graph):
+
+    if which_graph == 'accuracy':
+        train = smooth_curve(history['accuracy'])
+        valid = smooth_curve(history['val_accuracy'])
+
+    epochs = range(1, len(train) + 1)
+        
+    trim = 0 # remove first 5 epochs
+    # when graphing loss the first few epochs may skew the (loss) graph
+    
+    ax.plot(epochs[trim:], train[trim:], 'b', label = ('accuracy'))
+    ax.plot(epochs[trim:], train[trim:], 'b', linewidth = 15, alpha = 0.1)
+    
+    ax.plot(epochs[trim:], valid[trim:], 'orange', label = ('val_accuracy'))
+    ax.plot(epochs[trim:], valid[trim:], 'orange', linewidth = 15, alpha = 0.1)
+
+
+def graph_history_averaged(combined_history):
+    print('averaged_histories.keys : {}'.format(combined_history.keys()))
+    fig, (ax1) = plt.subplots(nrows = 1,
+                                   ncols = 1,
+                                   figsize = (6, 4),
+                                   sharex = True,
+                                   )
+
+    set_plot_history_data(ax1, combined_history, 'accuracy')
+    
+    # Accuracy graph
+    ax1.set_ylabel('Accuracy', weight = 'bold')
+    plt.xlabel('Epoch', weight = 'bold')
+    # ax1.set_ylim(bottom = 0.3, top = 1.0)
+    ax1.legend(loc = 'lower right')
+    ax1.set_yticks(np.arange(0.3, 1.0, step = 0.1))
+    ax1.spines['top'].set_visible(False)
+    ax1.spines['right'].set_visible(False)
+    ax1.xaxis.set_ticks_position('bottom')
+    ax1.spines['bottom'].set_visible(True)
+
+    plt.tight_layout()
+    plt.grid(False)
+    plt.savefig("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_publication\Averaged_graph.png", dpi = 500, bbox_inches="tight")
+    plt.close()
+    
+
+#%%
+# This takes a list of dictionaries, and combines them into a dictionary in which each key maps to a 
+# list of all the appropriate values from the parameter dictionaries
+
+def combine_dictionaries(list_of_dictionaries):
+    
+    combined_dictionaries = {}
+    
+    for individual_dictionary in list_of_dictionaries:
+        
+        for key_value in individual_dictionary:
+            
+            if key_value not in combined_dictionaries:
+                
+                combined_dictionaries[key_value] = []
+            combined_dictionaries[key_value].append(individual_dictionary[key_value])
+
+    return combined_dictionaries
+
+
+#%%
+
+# right now, no error checking, when all lists are either of same length or not the same length
+
+def find_mean_from_combined_dicts(combined_dicts):
+    
+    dict_of_means = {}
+
+    for key_value in combined_dicts:
+        dict_of_means[key_value] = []
+
+        # Length of longest list return the longest list within the list of a dictionary item
+        length_of_longest_list = max([len(a) for a in combined_dicts[key_value]])
+        temp_array = np.empty([len(combined_dicts[key_value]), length_of_longest_list])
+        temp_array[:] = np.NaN
+
+        for i, j in enumerate(combined_dicts[key_value]):
+            temp_array[i][0:len(j)] = j
+        mean_value = np.nanmean(temp_array, axis=0)
+
+        dict_of_means[key_value] = mean_value.tolist()
+    
+    return dict_of_means
+
+
 #%%
 # Function to create deep CNN
 
@@ -302,14 +409,10 @@ def create_models(model_shape, input_layer_dim):
     sgd = tf.keras.optimizers.SGD(lr = 0.001, momentum = 0.9, 
                                     nesterov = True, clipnorm = 1.)
     
-    # adm = tf.keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, 
-    #                                beta_2=0.999, epsilon=1e-07, amsgrad=False)
-    
     # define categorical_crossentrophy as the loss function (multi-class problem i.e. 3 age classes)
     
     # cce = 'categorical_crossentropy'
     bce = 'binary_crossentropy'
-
 
     # input shape vector
 
@@ -367,7 +470,8 @@ def create_models(model_shape, input_layer_dim):
                 xd = tf.keras.layers.BatchNormalization(name=('batchnorm_'+str(i+1)))(xd) 
         
     # Project the vector onto a 3 unit output layer, and squash it with a 
-    # softmax activation:
+    # sigmoid activation:
+    # x_age_group will have decoded inputs
 
     x_age_group     = tf.keras.layers.Dense(name = 'age_group', units = 2, 
                     #  activation = 'softmax',
@@ -474,88 +578,37 @@ seed = 42
 pca_pipe = Pipeline([('scaler', StandardScaler()),
                       ('pca', decomposition.KernelPCA(n_components = 8, kernel = 'linear'))])
 
-# Transform data into  principal componets 
+
 
 #%%
+
+# Transform data into  principal componets 
+
 age_pca = pca_pipe.fit_transform(X)
 print('First five observation : {}'.format(age_pca[:5]))
 
 # explained_var = pca_pipe.named_steps['pca'].explained_variance_ratio_
 # print('Explained variance : {}'.format(explained_var))
 
-# transform X matrix with 10 number of components and y list of labels as arrays
+# transform X matrix with 8 number of components and y list of labels as arrays
 
 X = np.asarray(age_pca)
 y = np.asarray(y)
 print(np.unique(y))
 
-# #%%
-# # visualize the majority of feautures with the most variance 
-
-# explained_variance_components = pca_pipe.named_steps['pca'].explained_variance_
-
-# plt.figure(figsize = (6, 4))
-# sns.set(context="paper",
-#         style="whitegrid",
-#         palette="deep",
-#         font_scale=2.0,
-#         color_codes=True,
-#         rc=None)
-        
-# plt.bar(range(4), explained_variance_components, alpha =  0.5, align = 'center', color = 'orangered')
-# plt.legend()
-# plt.ylabel('Variance ratio')
-# plt.xlabel('Principal componets', weight = 'bold')
-# plt.grid(False)
-# plt.tight_layout()
-# # plt.savefig("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\componets_8_plot.png", dpi = 500, bbox_inches="tight")
-
-#%%
-
-# Filter features 
-
-# X = train_data.iloc[:,:-1] # select all columns except the first one 
-# y = train_data["Age"]
-
-# print('shape of X : {}'.format(X.shape))
-# print('shape of y : {}'.format(y.shape))
-# seed = 42
-
-# scale features
-
-# scaler = StandardScaler()
-# X_new = scaler.fit_transform(X)
-
-# fs = SelectKBest(score_func = f_classif, k = 20)
-# # fs = SelectPercentile(f_classif, percentile = 10) # Select features according to a percentile of the highest scores
-# X_new_fs = fs.fit_transform(X_new, y)
-# print(X_new_fs.shape)
-
-# X = np.asarray(X_new_fs)
-# y = np.asarray(y)
-# print(np.unique(y))
-
 ############################################################
 
 
 #%%
-# Renaming the age group into three classes
+# Renaming the age group into two classes
 # Oganises the data into a format of lists of data, classes, labels.
-
-# y_age_group = np.where((y <= 5), 0, 0)
-# y_age_group = np.where((y >= 6) & (y <= 10), 1, y_age_group)
-# y_age_group = np.where((y >= 11), 2, y_age_group)
-
-# y_age_groups_list = [[ages] for ages in y_age_group]
-# age_group = MultiLabelBinarizer().fit_transform(np.array(y_age_groups_list))
-# age_group_classes = ["1-5", "6-10", "11-16"] 
 
 y_age_group = np.where((y <= 9), 0, 0)
 y_age_group = np.where((y >= 10), 1, y_age_group)
 
 y_age_groups_list = [[ages] for ages in y_age_group]
 age_group = MultiLabelBinarizer().fit_transform(np.array(y_age_groups_list))
-print('age_group', age_group)
+# print('age_group', age_group)
 age_group_classes = ["1-9", "10-16"] 
 
 # Labels default - all classification
@@ -660,25 +713,27 @@ kf = KFold(n_splits=num_folds, shuffle=True, random_state = seed)
 features = X
     
 histories = []
+averaged_histories = []
 fold = 1
 train_model = True
 
 # Name a folder for the outputs to go into
 
-savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_test")            
+savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_publication")            
 build_folder(savedir, True)
-savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_test\l")            
+savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_publication\l")            
 
 # start model training on standardized data
    
 start_time = time()
 save_predicted = []
 save_true = []
-save_hist = []
 
-# num_rounds = 5
+
+num_rounds = 2
+
 # for round in range(num_rounds):
-#     SEED = SEED = np.random.randint(0, 81470108)
+#     SEED = SEED = np.random.randint(0, 81470)
 
 for train_index, test_index in kf.split(features):
 
@@ -689,11 +744,11 @@ for train_index, test_index in kf.split(features):
 
     # Further divide training dataset into train and validation dataset 
     # with an 90:10 split
-    
+            
     validation_size = 0.1
     X_train, X_val, y_train, y_val = train_test_split(X_train,
-                                        *y_train, test_size = validation_size, random_state = seed)
-    
+                                                *y_train, test_size = validation_size, random_state = seed)
+            
 
     # expanding to one dimension, because the conv layer expcte to, 1
     X_train = X_train.reshape([X_train.shape[0], -1])
@@ -709,7 +764,7 @@ for train_index, test_index in kf.split(features):
     print("Shape of y_train:", y_train.shape)
     print("Shape of y_val:", y_val.shape)
     # print("Shape of y_test:", y_test.shape)
-    
+            
 
     input_layer_dim = len(X[0])
 
@@ -752,6 +807,9 @@ for train_index, test_index in kf.split(features):
         save_true.append(tru)
 
 
+    hist = history.history
+    averaged_histories.append(hist)
+
     # Plotting confusion matrix for each fold/iteration
 
     visualize(histories, savedir, model_name, str(fold), classes_default, outputs_default, y_predicted, y_test)
@@ -782,7 +840,20 @@ print('Run time : {} s'.format(end_time-start_time))
 print('Run time : {} m'.format((end_time-start_time)/60))
 print('Run time : {} h'.format((end_time-start_time)/3600))
 
+#%%
 
+# combine all dictionaries together
+
+combn_dictionar = combine_dictionaries(averaged_histories)
+with open('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_publication\combined_history_dictionaries.txt', 'w') as outfile:
+     json.dump(combn_dictionar, outfile)
+
+# find the average of all dictionaries 
+
+combn_dictionar_average = find_mean_from_combined_dicts(combn_dictionar)
+
+# Plot averaged histories
+graph_history_averaged(combn_dictionar_average)
 
 # %%
 # Loading dataset for prediction 
@@ -882,29 +953,11 @@ print('First five observation : {}'.format(age_valid[:5]))
 age_valid = np.asarray(age_valid)
 age_valid = age_valid.reshape([age_valid.shape[0], -1])
 # print(age_valid)
-
-
 print(age_valid.shape)
-
-# # filter features
-
-# age_valid = scaler.fit_transform(X_valid)
-# age_valid = fs.fit_transform(age_valid, y_valid)
-
-# age_valid = np.asarray(age_valid)
-# age_valid = age_valid.reshape([age_valid.shape[0], -1])
 
 
 #%%
 # change labels
-
-# y_age_group_val = np.where((y_valid <= 5), 0, 0)
-# y_age_group_val = np.where((y_valid >= 6) & (y_valid <= 10), 1, y_age_group_val)
-# y_age_group_val = np.where((y_valid >= 11), 2, y_age_group_val)
-
-# y_age_groups_list_val = [[ages_val] for ages_val in y_age_group_val]
-# age_group_val = MultiLabelBinarizer().fit_transform(np.array(y_age_groups_list_val))
-# age_group_classes_val = ["1-5", "6-10", "11-16"]
 
 y_age_group_val = np.where((y_valid <= 9), 0, 0)
 y_age_group_val = np.where((y_valid >= 10), 1, 0)
@@ -919,7 +972,7 @@ labels_default_val, classes_default_val = [age_group_val], [age_group_classes_va
 
 # load model trained with PCA transformed data from the disk 
 
-reconstracted_model = tf.keras.models.load_model("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_test\lCNN_0_3_Model.h5")
+reconstracted_model = tf.keras.models.load_model("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_publication\lCNN_0_3_Model.h5")
 
 # change the dimension of y_test to array
 y_validation = np.asarray(labels_default_val)
@@ -944,7 +997,7 @@ print(cr_pca)
 # save classification report to disk 
 cr = pd.read_fwf(io.StringIO(cr_pca), header=0)
 cr = cr.iloc[1:]
-cr.to_csv('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_test\classification_report.csv')
+cr.to_csv('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_publication\classification_report.csv')
 
 #%%
 
