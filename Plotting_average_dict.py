@@ -133,7 +133,7 @@ def graph_history_averaged(combined_history):
     plt.xlabel('Epoch', weight = 'bold')
     # ax1.set_ylim(bottom = 0.3, top = 1.0)
     ax1.legend(loc = 'lower right')
-    ax1.set_yticks(np.arange(0.3, 1.0, step = 0.1))
+    ax1.set_yticks(np.arange(0.3, 1.0 + .1, step = 0.1))
     ax1.spines['top'].set_visible(False)
     ax1.spines['right'].set_visible(False)
     ax1.xaxis.set_ticks_position('bottom')
@@ -151,7 +151,7 @@ with open('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_
 
 #%%
 
-# combined_avrg = find_mean_from_combined_dicts(combined_dictionary)
+combined_avrg = find_mean_from_combined_dicts(combined_dictionary)
 graph_history_averaged(combined_avrg)
 
 # %%
