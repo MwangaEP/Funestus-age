@@ -15,14 +15,14 @@ sns.set(context = "paper",
 # %matplotlib inline
 plt.rcParams["figure.figsize"] = [6,4]
 
-example_list_of_dicts = [{'loss': [60.901458740234375, 60.452842712402344, 59.98822784423828, 59.50740051269531, 59.02333450317383], 
-                        'accuracy': [0.5192592740058899, 0.512592613697052, 0.529629647731781, 0.5192592740058899, 0.5355555415153503], 
-                        'val_loss': [60.54882049560547, 60.1287841796875, 59.721778869628906, 59.26499938964844, 58.81584548950195], 
-                        'val_accuracy': [0.5666666626930237, 0.47333332896232605, 0.4333333373069763, 0.4333333373069763, 0.4333333373069763]}, 
-                        {'loss': [60.2, 60.1, 59.98822784423828, 59.5, 59.0], 
-                        'accuracy': [0.52, 0.522, 0.531, 0.519, 0.535], 
-                        'val_loss': [60.54, 60.12, 59.72, 59.26, 58.81], 
-                        'val_accuracy': [0.56, 0.47, 0.43, 0.43, 0.43]}]
+# example_list_of_dicts = [{'loss': [60.901458740234375, 60.452842712402344, 59.98822784423828, 59.50740051269531, 59.02333450317383], 
+#                         'accuracy': [0.5192592740058899, 0.512592613697052, 0.529629647731781, 0.5192592740058899, 0.5355555415153503], 
+#                         'val_loss': [60.54882049560547, 60.1287841796875, 59.721778869628906, 59.26499938964844, 58.81584548950195], 
+#                         'val_accuracy': [0.5666666626930237, 0.47333332896232605, 0.4333333373069763, 0.4333333373069763, 0.4333333373069763]}, 
+#                         {'loss': [60.2, 60.1, 59.98822784423828, 59.5, 59.0], 
+#                         'accuracy': [0.52, 0.522, 0.531, 0.519, 0.535], 
+#                         'val_loss': [60.54, 60.12, 59.72, 59.26, 58.81], 
+#                         'val_accuracy': [0.56, 0.47, 0.43, 0.43, 0.43]}]
 
 
 # print(example_list_of_dicts )
@@ -133,20 +133,21 @@ def graph_history_averaged(combined_history):
     plt.xlabel('Epoch', weight = 'bold')
     # ax1.set_ylim(bottom = 0.3, top = 1.0)
     ax1.legend(loc = 'lower right')
-    ax1.set_yticks(np.arange(0.3, 1.0 + .1, step = 0.1))
+    # ax1.set_yticks(np.arange(0.3, 1.0 + .2, step = 0.1))
     ax1.spines['top'].set_visible(False)
     ax1.spines['right'].set_visible(False)
     ax1.xaxis.set_ticks_position('bottom')
     ax1.spines['bottom'].set_visible(True)
 
+    plt.yticks(np.arange(0.3, 1.0 + 0.1, step = 0.1))
     plt.tight_layout()
     plt.grid(False)
-    plt.savefig("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_publication\Averaged_graph_2.png", dpi = 500, bbox_inches="tight")
+    plt.savefig("C:\Mannu\QMBCE\Thesis\Fold\_allcomps_std_k_fold_publish_01\Averaged_graph_2.png", dpi = 500, bbox_inches="tight")
     plt.close()
 
 #%%
 
-with open('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_publication\combined_history_dictionaries.txt') as json_file:
+with open('C:\Mannu\QMBCE\Thesis\Fold\_allcomps_std_k_fold_publish_01\combined_history_dictionaries.txt') as json_file:
     combined_dictionary = json.load(json_file)
 
 #%%

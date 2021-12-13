@@ -34,6 +34,7 @@ from sklearn.metrics import confusion_matrix, classification_report, f1_score, r
 from sklearn.feature_selection import SelectKBest, SelectPercentile, f_classif, chi2, mutual_info_classif
 
 from sklearn import decomposition
+from sklearn.manifold import MDS
 
 from sklearn.feature_selection import SelectKBest
 from sklearn.pipeline import Pipeline
@@ -337,7 +338,7 @@ def graph_history_averaged(combined_history):
     plt.xlabel('Epoch', weight = 'bold')
     # ax1.set_ylim(bottom = 0.3, top = 1.0)
     ax1.legend(loc = 'lower right')
-    ax1.set_yticks(np.arange(0.3, 1.0, step = 0.1))
+    ax1.set_yticks(np.arange(0.3, 1.0 + 0.1, step = 0.1))
     ax1.spines['top'].set_visible(False)
     ax1.spines['right'].set_visible(False)
     ax1.xaxis.set_ticks_position('bottom')
@@ -345,7 +346,7 @@ def graph_history_averaged(combined_history):
 
     plt.tight_layout()
     plt.grid(False)
-    plt.savefig("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_publication\Averaged_graph.png", dpi = 500, bbox_inches="tight")
+    plt.savefig("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\Averaged_graph.png", dpi = 500, bbox_inches="tight")
     plt.close()
     
 
@@ -411,8 +412,8 @@ def create_models(model_shape, input_layer_dim):
     
     # define categorical_crossentrophy as the loss function (multi-class problem i.e. 3 age classes)
     
-    # cce = 'categorical_crossentropy'
-    bce = 'binary_crossentropy'
+    cce = 'categorical_crossentropy'
+    # bce = 'binary_crossentropy'
 
     # input shape vector
 
@@ -474,8 +475,8 @@ def create_models(model_shape, input_layer_dim):
     # x_age_group will have decoded inputs
 
     x_age_group     = tf.keras.layers.Dense(name = 'age_group', units = 2, 
-                    #  activation = 'softmax',
-                      activation = 'sigmoid',
+                     activation = 'softmax',
+                    #   activation = 'sigmoid',
                      kernel_regularizer = regularizers.l2(regConst), 
                      kernel_initializer = 'he_normal')(xd)
 
@@ -484,7 +485,7 @@ def create_models(model_shape, input_layer_dim):
         outputs.append(locals()[i])
     model = Model(inputs = input_vec, outputs = outputs)
     
-    model.compile(loss = bce, metrics = ['accuracy'], 
+    model.compile(loss = cce, metrics = ['accuracy'], 
                   optimizer=sgd)
     model.summary()
     return model
@@ -575,19 +576,76 @@ seed = 42
 
 # A pipeline containing standardization and PCA algorithm
 
-pca_pipe = Pipeline([('scaler', StandardScaler()),
-                      ('pca', decomposition.KernelPCA(n_components = 8, kernel = 'linear'))])
-
+scl = StandardScaler()
+pca_pipe = decomposition.PCA(n_components = 4)
 
 
 #%%
 
-# Transform data into  principal componets 
+# The size of the lower-dimensional space in which the points are embedded in MDS is one of the 
+# important hyper-parameters
 
-age_pca = pca_pipe.fit_transform(X)
+# A simple method to choose a value of this parameter is to run MDS on different values of 
+# n_components and plot the stress_ value for each embedding. Given that the stress_ value decreases 
+# with higher dimensions - you pick a point that has a fair tradeoff between stress_ and n_components
+
+# stress = []
+
+# # Max value for n_components
+
+# max_range = 21
+# for dim in range(1, max_range):
+#     # Set up the MDS object
+#     mds = MDS(n_components = dim, dissimilarity = "euclidean", random_state = 42)
+#     # Apply MDS
+#     pts = mds.fit_transform(X)
+#     # Retrieve the stress value
+#     stress.append(mds.stress_)
+
+
+# # Plot stress vs. n_components 
+# sns.set(context = 'paper',
+#         style = 'whitegrid',
+#         palette = 'deep',
+#         font_scale = 2.0,
+#         color_codes = True,
+#         rc = ({'font.family': 'Dejavu Sans'}))
+
+# plt.figure(figsize = (6, 4))
+# # plt.style.use('ggplot')
+   
+# plt.plot(range(1, max_range), stress)
+# plt.xticks(range(1, max_range, 2))
+# plt.xlabel('n_components')
+# plt.ylabel('stress')
+# plt.show()
+
+#%%
+
+# start_time = time()
+
+# mds = MDS(n_components = 2, random_state= 42, dissimilarity = "euclidean")
+
+# # transform X matrix with 8 number of components and y list of labels as arrays
+# age_pts = mds.fit_transform(X)
+
+# X = np.asarray(age_pts)
+# y = np.asarray(y)
+# print(np.unique(y))
+
+# end_time = time()
+# print('mds Run time : {} m'.format((end_time-start_time)/60))
+
+#%%
+
+# Transform data into  principal componets 
+scaler = scl.fit(X = X)
+X_new = scaler.transform(X = X)
+
+age_pca = pca_pipe.fit_transform(X_new)
 print('First five observation : {}'.format(age_pca[:5]))
 
-# explained_var = pca_pipe.named_steps['pca'].explained_variance_ratio_
+explained_var = pca_pipe.explained_variance_ratio_
 # print('Explained variance : {}'.format(explained_var))
 
 # transform X matrix with 8 number of components and y list of labels as arrays
@@ -595,6 +653,27 @@ print('First five observation : {}'.format(age_pca[:5]))
 X = np.asarray(age_pca)
 y = np.asarray(y)
 print(np.unique(y))
+
+#%%
+# sns.set(context = 'paper',
+#         style = 'whitegrid',
+#         palette = 'deep',
+#         font_scale = 2.0,
+#         color_codes = True,
+#         rc = ({'font.family': 'Dejavu Sans'}))
+
+# plt.figure(figsize = (6, 5))
+# plt.style.use('seaborn')
+
+# plt.plot(np.cumsum(explained_var))
+# plt.grid(True)
+# plt.xticks(np.arange(0, 14 + 2, step = 2), fontsize = 18)
+# plt.yticks(fontsize = 18)
+# plt.axhline(y = .99, color = 'r', linestyle= '-', linewidth = 0.5)
+# plt.axvline(x = 8, color = 'r', linestyle= '-', linewidth = 0.5)
+# plt.xlabel('Number of components', weight = 'bold', fontsize = 18)
+# plt.ylabel('Commulative Explained variance', weight = 'bold', fontsize = 18);
+# # plt.savefig("C:\Mannu\QMBCE\Thesis\Fold\_no_comp_", dpi = 500, bbox_inches="tight")
 
 ############################################################
 
@@ -696,6 +775,7 @@ model_size = [#{'type':'c', 'filter':8, 'kernel':2, 'stride':1, 'pooling':1},
              {'type':'d', 'width':500},
              {'type':'d', 'width':500},
              {'type':'d', 'width':500},
+             {'type':'d', 'width':500},
              {'type':'d', 'width':500}]
 
 
@@ -719,9 +799,9 @@ train_model = True
 
 # Name a folder for the outputs to go into
 
-savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_publication")            
+savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens")            
 build_folder(savedir, True)
-savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_publication\l")            
+savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\l")            
 
 # start model training on standardized data
    
@@ -845,7 +925,7 @@ print('Run time : {} h'.format((end_time-start_time)/3600))
 # combine all dictionaries together
 
 combn_dictionar = combine_dictionaries(averaged_histories)
-with open('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_publication\combined_history_dictionaries.txt', 'w') as outfile:
+with open('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\combined_history_dictionaries.txt', 'w') as outfile:
      json.dump(combn_dictionar, outfile)
 
 # find the average of all dictionaries 
@@ -944,9 +1024,10 @@ print(np.unique(y_valid))
 
 # tranform matrix of features with PCA 
 
-
-age_valid = pca_pipe.fit_transform(X_valid)
+X_valid_new = scaler.transform(X = X_valid)
+age_valid = pca_pipe.fit_transform(X_valid_new)
 print('First five observation : {}'.format(age_valid[:5]))
+
 
 # transform X and y matrices as arrays
 
@@ -972,7 +1053,7 @@ labels_default_val, classes_default_val = [age_group_val], [age_group_classes_va
 
 # load model trained with PCA transformed data from the disk 
 
-reconstracted_model = tf.keras.models.load_model("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_publication\lCNN_0_3_Model.h5")
+reconstracted_model = tf.keras.models.load_model("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\lCNN_0_3_Model.h5")
 
 # change the dimension of y_test to array
 y_validation = np.asarray(labels_default_val)
@@ -997,7 +1078,7 @@ print(cr_pca)
 # save classification report to disk 
 cr = pd.read_fwf(io.StringIO(cr_pca), header=0)
 cr = cr.iloc[1:]
-cr.to_csv('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens_publication\classification_report.csv')
+cr.to_csv('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\classification_report.csv')
 
 #%%
 

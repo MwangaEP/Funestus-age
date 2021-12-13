@@ -112,7 +112,7 @@ def plot_confusion_matrix(cm, classes,
     plt.ylabel('True label', weight = 'bold')
     plt.xlabel('Predicted label', weight = 'bold')
     # plt.show()
-    plt.savefig(("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\Confusion_Matrix_" + figure_name + "_" + ".png"), dpi = 500, bbox_inches="tight")
+    # plt.savefig(("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\Confusion_Matrix_" + figure_name + "_" + ".png"), dpi = 500, bbox_inches="tight")
    
 
 #%%
@@ -267,22 +267,83 @@ print('shape of y : {}'.format(y.shape))
 
 # A pipeline containing standardization and PCA algorithm
 
-pca_pipe = Pipeline([('scaler', StandardScaler()),
-                      ('pca', decomposition.KernelPCA(n_components = 8, kernel = 'linear'))
-                      ])
+# pca_pipe = Pipeline([('scaler', StandardScaler()),
+#                       ('pca', decomposition.KernelPCA(n_components = 4, kernel = 'linear'))
+#                       ])
 
+X = np.asarray(X)
+y = np.asarray(y)
+
+scl = StandardScaler()
+scaler = scl.fit(X = X)
+scaled_features = scaler.transform(X = X)
+
+pca_pipe = decomposition.PCA(n_components = 6)
 
 #%%
-
+# Transforming data into lower dimension
 # Transform data into  principal componets 
-age_pca = pca_pipe.fit_transform(X)
+age_pca = pca_pipe.fit_transform(scaled_features)
 print('First five observation : {}'.format(age_pca[:5]))
 
+explained_var = pca_pipe.explained_variance_ratio_
+print('Explained variance : {}'.format(explained_var))
+
+
+#%%
+# sns.set(context = 'paper',
+#         style = 'whitegrid',
+#         palette = 'deep',
+#         font_scale = 2.0,
+#         color_codes = True,
+#         rc = ({'font.family': 'Dejavu Sans'}))
+
+# plt.figure(figsize = (6, 5))
+# plt.style.use('seaborn')
+
+# plt.plot(np.cumsum(explained_var))
+# plt.grid(True)
+# plt.xticks(np.arange(0, 14 + 2, step = 2), fontsize = 18)
+# plt.yticks(fontsize = 18)
+# plt.axhline(y = .99, color = 'r', linestyle= '-', linewidth = 0.5)
+# plt.axvline(x = 8, color = 'r', linestyle= '-', linewidth = 0.5)
+# plt.xlabel('Number of components', weight = 'bold', fontsize = 18)
+# plt.ylabel('Commulative Explained variance', weight = 'bold', fontsize = 18);
+
+
+#%%
+# explained_variance = np.var(age_pca, axis=0)
+# explained_variance_ratio = explained_variance/np.sum(explained_variance)
 
 #%%
 
-X = np.asarray(age_pca)
-y = np.asarray(y)
+# sns.set(context = 'paper',
+#         style = 'whitegrid',
+#         palette = 'deep',
+#         font_scale = 2.0,
+#         color_codes = True,
+#         rc = ({'font.family': 'Dejavu Sans'}))
+
+# plt.figure(figsize = (6, 4))
+# plt.style.use('ggplot')
+
+# plt.plot(np.cumsum(explained_variance_ratio), linewidth = 2)
+# plt.grid(True)
+# plt.xticks(np.arange(0, 10 + 2, step = 2))
+# plt.xlabel('number of components', weight = 'bold', fontsize = 18)
+# plt.ylabel('% explained variance', weight = 'bold', fontsize = 18);
+
+# plt.savefig("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\_no_comp_", dpi = 500, bbox_inches="tight")
+
+# fig, ax = plt.subplots()
+# ax.plot(x, y, color=blue, lw=3)
+# ax.fill_between(x, 0, y, alpha=.3)
+
+
+#%%
+
+features = np.asarray(age_pca)
+labels = np.asarray(y)
 print(np.unique(y))
 
 
@@ -293,7 +354,7 @@ skf = StratifiedKFold(n_splits = num_folds, random_state=seed, shuffle=True)
 
 for name, model in models:
     cv_results = cross_val_score(
-        model, X, y, cv = kf, scoring = scoring)
+        model, features, labels, cv = kf, scoring = scoring)
     results.append(cv_results)
     names.append(name)
     msg = 'Cross validation score for {0}: {1:.2%}'.format(
@@ -317,40 +378,40 @@ sns.boxplot(x = names, y = results, width = .4)
 sns.despine(offset = 10, trim = True)
 plt.xticks(rotation = 90)
 plt.ylim(ymin = 0.4, ymax = 1.0)
-plt.yticks(np.arange(0.3, 1.0 + .1, step = 0.1))
+plt.yticks(np.arange(0.2, 1.0 + .1, step = 0.1))
 plt.ylabel('Accuracy', weight = 'bold')
 plt.tight_layout()
 # plt.show()
-plt.savefig("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\_algorithm_sel_", dpi = 500, bbox_inches="tight")
+# plt.savefig("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\_algorithm_sel_", dpi = 500, bbox_inches="tight")
 
 
 
 #%%
 # train XGB classifier and tune its hyper-parameters with randomized grid search 
 
-print(np.unique(y))
+print(np.unique(labels))
 
 num_rounds = 20
-classifier = XGBClassifier(n_estimators = 1000)
+# classifier = XGBClassifier(n_estimators = 1000)
 
-# classifier = RandomForestClassifier(n_estimators = 1000, random_state = seed)
+classifier = RandomForestClassifier(n_estimators = 1000, random_state = seed)
 
-# # classifier = MLPClassifier(hidden_layer_sizes = 500, activation = 'logistic', 
+# classifier = MLPClassifier(hidden_layer_sizes = 500, activation = 'logistic', 
 #                                     solver = 'sgd', alpha = 0.01, learning_rate_init = .1,
 #                                     max_iter = 3000, early_stopping = True)
 
 
 # set hyparameter
 
-# estimators = [100, 500, 1000]
-rate = [0.05, 0.10, 0.15, 0.20, 0.30]
-depth = [2, 3, 4, 5, 6, 8, 10, 12, 15]
-child_weight = [1, 3, 5, 7]
-gamma = [0.0, 0.1, 0.2, 0.3, 0.4]
-bytree = [0.1, 0.2, 0.3, 0.4, 0.5, 0.7]
+# # estimators = [100, 500, 1000]
+# rate = [0.05, 0.10, 0.15, 0.20, 0.30]
+# depth = [2, 3, 4, 5, 6, 8, 10, 12, 15]
+# child_weight = [1, 3, 5, 7]
+# gamma = [0.0, 0.1, 0.2, 0.3, 0.4]
+# bytree = [0.1, 0.2, 0.3, 0.4, 0.5, 0.7]
 
-param_grid = dict(learning_rate = rate, max_depth = depth,
-                min_child_weight = child_weight, gamma = gamma, colsample_bytree = bytree)
+# param_grid = dict(learning_rate = rate, max_depth = depth,
+#                 min_child_weight = child_weight, gamma = gamma, colsample_bytree = bytree)
 
 
 # prepare matrices of results
@@ -365,12 +426,12 @@ start = time()
 for round in range(num_rounds):
     SEED = np.random.randint(0, 81470)
     
-    for train_index, test_index in kf.split(X, y):
+    for train_index, test_index in kf.split(features, labels):
 
         # Split data into test and train
 
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
+        X_train, X_test = features[train_index], features[test_index]
+        y_train, y_test = labels[train_index], labels[test_index]
 
         # split validation
         # validation_size = 0.1
@@ -388,27 +449,28 @@ for round in range(num_rounds):
         
         # generate models using all combinations of settings
 
-        # RANDOMSED GRID SEARCH
-        n_iter_search = 10
-        rsCV = RandomizedSearchCV(verbose = 1,
-                    estimator = classifier, param_distributions = param_grid, n_iter = n_iter_search, 
-                                scoring = scoring, cv = kf)
+        # # RANDOMSED GRID SEARCH
+        # n_iter_search = 10
+        # rsCV = RandomizedSearchCV(verbose = 1,
+        #             estimator = classifier, param_distributions = param_grid, n_iter = n_iter_search, 
+        #                         scoring = scoring, cv = kf)
         
-        rsCV_result = rsCV.fit(X_train, y_train)
+        # rsCV_result = rsCV.fit(X_train, y_train)
 
-        # print out results and give hyperparameter settings for best one
-        means = rsCV_result.cv_results_['mean_test_score']
-        stds = rsCV_result.cv_results_['std_test_score']
-        params = rsCV_result.cv_results_['params']
-        for mean, stdev, param in zip(means, stds, params):
-            print("%.2f (%.2f) with: %r" % (mean, stdev, param))
+        # # print out results and give hyperparameter settings for best one
+        # means = rsCV_result.cv_results_['mean_test_score']
+        # stds = rsCV_result.cv_results_['std_test_score']
+        # params = rsCV_result.cv_results_['params']
+        # for mean, stdev, param in zip(means, stds, params):
+        #     print("%.2f (%.2f) with: %r" % (mean, stdev, param))
 
-        # print best parameter settings
-        print("Best: %.2f using %s" % (rsCV_result.best_score_,
-                                    rsCV_result.best_params_))
+        # # print best parameter settings
+        # print("Best: %.2f using %s" % (rsCV_result.best_score_,
+        #                             rsCV_result.best_params_))
 
-        # Insert the best parameters identified by randomized grid search into the base classifier
-        classifier = XGBClassifier(seed=SEED, **rsCV_result.best_params_)
+        # # Insert the best parameters identified by randomized grid search into the base classifier
+        # classifier = XGBClassifier(random_state = SEED, **rsCV_result.best_params_)
+        classifier = RandomForestClassifier(n_estimators = 1000, random_state = SEED)
 
         # Fitting the best classifier
         # eval_set = [(X_val, y_val)]
@@ -495,7 +557,7 @@ plt.ylabel("Prediction accuracy", weight="bold")
 plt.grid(False)
 plt.tight_layout()
 # plt.show()
-plt.savefig("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\_rf_per_class_acc_distrib.png", dpi = 500, bbox_inches="tight")
+# plt.savefig("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\_rf_per_class_acc_distrib.png", dpi = 500, bbox_inches="tight")
 
 # %%
 
@@ -612,6 +674,8 @@ y_valid = np.asarray(y_valid)
 print(np.unique(y_valid))
 
 # tranform matrix of features with PCA 
+
+X_valid = scaler.transform(X = X_valid)
 
 age_valid = pca_pipe.fit_transform(X_valid)
 print('First five observation : {}'.format(age_valid[:5]))
