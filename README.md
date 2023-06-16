@@ -1,19 +1,6 @@
-# Funestus-age
+Up to date files for testing:
 
-Predicting the age of An. funestus mosquitoes using machine learning models
-
-# Data pre-processing 
-
-Mosquito spectra data were filtered to drop the ones with abnormal background, low intensity and atmospheric interfaces (i.e. water (H¬2O), and carbon dioxide (CO2)). Thereafter, spectra data was rescaled to unit variance with a mean of 0 and a standard deviation of 1 using StandardScaler. Kernel Principal component analysis (KPCA) was used to project  the mosquito spectra features into lower dimensional space from high dimensional space, while taking into account the nonlinearities in the data. In this case, we used 8 principal components with a linear kernel. StandarScaler and Kernel PCA was performed on performed in python version 3.8 using open-source application programming interface (API), scikit-learn library version 0.23.    
-Machine learning
-
-# Deep learning
-
-The dataset consisted of 2084 mosquito spectra. The dataset was first split into 2 split using shuffle split; training set (n = 1875) and unseen data (n = 209). The training set was further split into three different set using K-fold (k = 5) and train test split; train set (n = 1350) used for model training, validation set (n = 150) for validating the model while training, and test set (n = 375) for assessing predictive capacity of the model before challenging it with unseen data. For the training set, mosquito ages were classified into 2 classes, 1 – 9 days (young An. funestus; potentially not infectious; n = ), and 10 – 16 days (old An. funestus; can carry infection and potentially infectious; n = ). On the other hand, the two classes in the unseen data 1 -9 and 10 -16 days included 113 and 96 samples per class respectively.
- 
-We therefore trained a binary classification deep learning model which took An. funestus spectra features projected into 8 principal components as inputs, and outputs age classes. Since the An. funestus was already transformed into lower dimensional space, the deep learning inputs were passed only to full-connected layers to allow the model to learn from the learnable weights of the network (Mwanga et al., Unpublished). Following each full-connected layer (dense layer), a batch normalization layer was added to normalize each batch to unit variance to maintain model stability. A dropout layer with a rate of 0.5 at each step during training was added to help reduce over fitting of the model. Furthermore, early stopping was included to further avoid overfitting by stopping model training a validation loss can no longer improve.  A sigmoid layer was added as an output for the full-connected layer which computed the probability of a mosquito spectra being either young (0 – 9 days) or old (10 – 16 days). A stochastic gradient boosting algorithm was used to optimize the neural network, and binary cross-entropy was used as the metric of the loss function given the number of classes were only two.     
-Deep learning was also performed in python version 3.8 using Keras and Tensorflow backend version 2.0. 
-
-# Standard machine learning
-
-Standard machine learning models were trained on the same dataset, to compare predictions with that of the deep learning model. Classifiers including, K-nearest neighbors: KNN, Logistic regression: LR, Support vector machines: SVM, Random forest: RF, Gradient boosting: XGBoost, Decision Tree: DT, and Multilayer perceptron: MLP. The model with highest accuracy in predicting An. funestus age classes was optimized by tuning its hyperparameter using randomized search cross-validation, and model training as well as testing was cross-validated using K-fold (k = 5). Thereafter, the trained and optimized model was saved and used to predict unseen data. Scikit-learn version 0.23, an open source application programming interface was used to perform standard machine learning models in python version 3.8.
+1. standard_ml_fun_age_publication_fullwn.py : XGBoost classifier trained with all spectra features/wavenumbers
+2. standard_ml_fun_age_publication_fselected_wn.py : XGBoost classifier retrained with 100 top features/wavenumbers influencing the prediction of the initial model
+3. MLP_fun_age_XGB_feat_importances.py : Multilayer perceptron trained with fewer features (n = 100, selected using XGBoost feature importances)
+4. MLP_PCA.py : Multilayer perceptron trained with 8 principal components, same as Mwanga et al., 2023; https://doi.org/10.1186/s12859-022-05128-5
