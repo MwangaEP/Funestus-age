@@ -1,5 +1,5 @@
 #%%
-# This program uses standard machine learning to predict the age structure of 
+# This program uses standard machine learning to predict the age structure of
 # of Anopheles funestus mosquitoes collected from the wild
 
 # Principal component analysis is used to reduce the dimensionality of the data
@@ -19,13 +19,13 @@ import pickle
 from itertools import cycle
 import datetime
 
-import numpy as np 
+import numpy as np
 import pandas as pd
 
 from random import randint
-from collections import Counter 
+from collections import Counter
 
-from sklearn.model_selection import ShuffleSplit, train_test_split, StratifiedKFold, StratifiedShuffleSplit, KFold 
+from sklearn.model_selection import ShuffleSplit, train_test_split, StratifiedKFold, StratifiedShuffleSplit, KFold
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV, cross_val_score
 from sklearn.preprocessing import StandardScaler, Normalizer
 from sklearn.preprocessing import MultiLabelBinarizer
@@ -63,79 +63,12 @@ sns.set(context = "paper",
 # %matplotlib inline
 plt.rcParams["figure.figsize"] = [6,4]
 
+# import local utils script
+import plotting_utils
 
 #%%
 
-# This normalizes the confusion matrix and ensures neat plotting for all outputs.
-# Function for plotting confusion matrcies
-
-def plot_confusion_matrix(cm, classes,
-                          normalize = True,
-                          title = 'Confusion matrix',
-                          xrotation=0,
-                          yrotation=0,
-                          cmap=plt.cm.Purples,
-                          printout = False):
-    """
-    This function prints and plots the confusion matrix.
-    Normalization can be applied by setting `normalize=True`.
-    """
-    if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        if printout:
-            print("Normalized confusion matrix")
-    else:
-        if printout:
-            print('Confusion matrix')
-
-    if printout:
-        print(cm)
-    
-    plt.figure(figsize=(6,4))
-
-    plt.imshow(cm, interpolation='nearest', vmin = 0.2, vmax = 1.0, cmap=cmap)
-    # plt.title(title)
-    plt.colorbar()
-    classes = classes
-    tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=xrotation)
-    plt.yticks(tick_marks, classes, rotation=yrotation)
-
-    fmt = '.2f' if normalize else 'd'
-    thresh = cm.max() / 2.
-    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], fmt),
-                 horizontalalignment="center",
-                 color="white" if cm[i, j] > thresh else "black")
-
-    plt.tight_layout()
-    plt.ylabel('True label', weight = 'bold')
-    plt.xlabel('Predicted label', weight = 'bold')
-    # plt.show()
-    # plt.savefig(("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\Confusion_Matrix_" + figure_name + "_" + ".png"), dpi = 500, bbox_inches="tight")
-   
-
-#%%
-# Visualizing outputs
-# for visualizing confusion matrix once the model is trained
-
-def visualize(figure_name, classes, predicted, true):
-    # Sort out predictions and true labels
-    # for label_predictions_arr, label_true_arr, classes, outputs in zip(predicted, true, classes, outputs):
-#     print('visualize predicted classes', predicted)
-#     print('visualize true classes', true)
-    classes_pred = np.asarray(predicted)
-    classes_true = np.asarray(true)
-    print(classes_pred.shape)
-    print(classes_true.shape)
-    classes = ['1-9', '10-16']
-    cnf_matrix = confusion_matrix(classes_true, classes_pred, labels = classes)
-    plot_confusion_matrix(cnf_matrix, classes)
-
-
-#%%
-
-# Loading dataset for prediction 
+# Loading dataset for prediction
 # Upload An. funestus train data for model training
 
 train_data = pd.read_csv("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\set_to_train_an_fun_new.csv")
@@ -157,10 +90,10 @@ Age = []
 for row in train_data['Cat3']:
     if row == '01D':
         Age.append(1)
-    
+
     elif row == '02D':
         Age.append(2)
-    
+
     elif row == '03D':
         Age.append(3)
 
@@ -208,7 +141,7 @@ print(Age)
 train_data['Age'] = Age
 
 # drop the column with Chronological Age and keep the age structure
-train_data = train_data.drop(['Cat3'], axis = 1) 
+train_data = train_data.drop(['Cat3'], axis = 1)
 train_data.head(5)
 
 
@@ -230,7 +163,7 @@ print(Age_group)
 train_data['Age_group'] = Age_group
 
 # drop the column with Chronological Age and keep the age structure
-train_data = train_data.drop(['Age'], axis = 1) 
+train_data = train_data.drop(['Age'], axis = 1)
 train_data.head(5)
 
 #%%
@@ -250,14 +183,14 @@ models.append(('LR', LogisticRegressionCV(multi_class = 'ovr', cv = kf, max_iter
 models.append(('SVM', SVC(kernel = 'linear', random_state = seed)))
 models.append(('RF', RandomForestClassifier(n_estimators = 1000, random_state = seed)))
 models.append(('XGBoost', XGBClassifier(random_state = seed, n_estimators = 1000)))
-models.append(('MLP', MLPClassifier(hidden_layer_sizes = 500, activation = 'logistic', 
+models.append(('MLP', MLPClassifier(hidden_layer_sizes = 500, activation = 'logistic',
                                     solver = 'sgd', alpha = 0.01, learning_rate_init = .01,
                                     max_iter = 3000, early_stopping = True)))
 
 
 #%%
 
-X = train_data.iloc[:,:-1] # select all columns except the last one 
+X = train_data.iloc[:,:-1] # select all columns except the last one
 y = train_data["Age_group"]
 
 print('shape of X : {}'.format(X.shape))
@@ -282,7 +215,7 @@ pca_pipe = decomposition.PCA(n_components = 6)
 
 #%%
 # Transforming data into lower dimension
-# Transform data into  principal componets 
+# Transform data into  principal componets
 age_pca = pca_pipe.fit_transform(scaled_features)
 print('First five observation : {}'.format(age_pca[:5]))
 
@@ -364,7 +297,7 @@ for name, model in models:
 
 #%%
 
-# Plotting the algorithm selection 
+# Plotting the algorithm selection
 
 sns.set(context = 'paper',
         style = 'whitegrid',
@@ -387,7 +320,7 @@ plt.tight_layout()
 
 
 #%%
-# train XGB classifier and tune its hyper-parameters with randomized grid search 
+# train XGB classifier and tune its hyper-parameters with randomized grid search
 
 print(np.unique(labels))
 
@@ -396,7 +329,7 @@ num_rounds = 20
 
 classifier = RandomForestClassifier(n_estimators = 1000, random_state = seed)
 
-# classifier = MLPClassifier(hidden_layer_sizes = 500, activation = 'logistic', 
+# classifier = MLPClassifier(hidden_layer_sizes = 500, activation = 'logistic',
 #                                     solver = 'sgd', alpha = 0.01, learning_rate_init = .1,
 #                                     max_iter = 3000, early_stopping = True)
 
@@ -425,7 +358,7 @@ start = time()
 
 for round in range(num_rounds):
     SEED = np.random.randint(0, 81470)
-    
+
     for train_index, test_index in kf.split(features, labels):
 
         # Split data into test and train
@@ -437,7 +370,7 @@ for round in range(num_rounds):
         # validation_size = 0.1
         # X_train, X_val, y_train, y_val = train_test_split(X_train,
         #                                  y_train, test_size = validation_size, random_state = seed)
-    
+
 
         # Check the sizes of all newly created datasets
         print("Shape of X_train:", X_train.shape)
@@ -446,15 +379,15 @@ for round in range(num_rounds):
         print("Shape of y_train:", y_train.shape)
         # print("Shape of y_val:", y_val.shape)
         print("Shape of y_test:", y_test.shape)
-        
+
         # generate models using all combinations of settings
 
         # # RANDOMSED GRID SEARCH
         # n_iter_search = 10
         # rsCV = RandomizedSearchCV(verbose = 1,
-        #             estimator = classifier, param_distributions = param_grid, n_iter = n_iter_search, 
+        #             estimator = classifier, param_distributions = param_grid, n_iter = n_iter_search,
         #                         scoring = scoring, cv = kf)
-        
+
         # rsCV_result = rsCV.fit(X_train, y_train)
 
         # # print out results and give hyperparameter settings for best one
@@ -569,7 +502,7 @@ with open('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\classif
 
 # %%
 # Loading new dataset for prediction (Glasgow dataset)
-# start by loading the new test data 
+# start by loading the new test data
 
 df_new = pd.read_csv("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\set_to_test_an_fun_new.csv")
 print(df_new.head())
@@ -587,10 +520,10 @@ Age = []
 for row in df_new['Cat3']:
     if row == '01D':
         Age.append(1)
-    
+
     elif row == '02D':
         Age.append(2)
-    
+
     elif row == '03D':
         Age.append(3)
 
@@ -638,7 +571,7 @@ print(Age)
 df_new['Age'] = Age
 
 # drop the column with Chronological Age and keep the age structure
-df_new = df_new.drop(['Cat3'], axis = 1) 
+df_new = df_new.drop(['Cat3'], axis = 1)
 df_new.head(5)
 
 
@@ -658,7 +591,7 @@ print(Age_group)
 df_new['Age_group'] = Age_group
 
 # drop the column with Chronological Age and keep the age structure
-df_new = df_new.drop(['Age'], axis = 1) 
+df_new = df_new.drop(['Age'], axis = 1)
 df_new.head(5)
 
 #%%
@@ -673,7 +606,7 @@ print('shape of y_valid : {}'.format(y_valid.shape))
 y_valid = np.asarray(y_valid)
 print(np.unique(y_valid))
 
-# tranform matrix of features with PCA 
+# tranform matrix of features with PCA
 
 X_valid = scaler.transform(X = X_valid)
 
@@ -691,7 +624,7 @@ with open('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\classif
 
 predictions = classifier_loaded.predict(age_valid)
 
-# Examine the accuracy of the model in predicting glasgow data 
+# Examine the accuracy of the model in predicting glasgow data
 
 accuracy = accuracy_score(y_valid, predictions)
 print("Accuracy:%.2f%%" %(accuracy * 100.0))
