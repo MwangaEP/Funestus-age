@@ -1,7 +1,7 @@
-#  # This program uses deep learning to predict the age structure of 
+#  # This program uses deep learning to predict the age structure of
 # of Anopheles funestus mosquitoes collected from the wild
 
-#%%
+# %%
 
 import this
 import os
@@ -17,21 +17,43 @@ import pickle
 import datetime
 import json
 
-import numpy as np 
+import numpy as np
 import pandas as pd
 
 import random as rn
 from random import randint
 
 
-from collections import Counter 
+from collections import Counter
 
-from sklearn.model_selection import ShuffleSplit, train_test_split, StratifiedKFold, StratifiedShuffleSplit, KFold 
+from sklearn.model_selection import (
+    ShuffleSplit,
+    train_test_split,
+    StratifiedKFold,
+    StratifiedShuffleSplit,
+    KFold,
+)
 from sklearn.preprocessing import StandardScaler, Normalizer, MinMaxScaler
-from sklearn.preprocessing import MultiLabelBinarizer, FunctionTransformer, LabelBinarizer
-from sklearn.metrics import confusion_matrix, classification_report, f1_score, recall_score, precision_score
+from sklearn.preprocessing import (
+    MultiLabelBinarizer,
+    FunctionTransformer,
+    LabelBinarizer,
+)
+from sklearn.metrics import (
+    confusion_matrix,
+    classification_report,
+    f1_score,
+    recall_score,
+    precision_score,
+)
 
-from sklearn.feature_selection import SelectKBest, SelectPercentile, f_classif, chi2, mutual_info_classif
+from sklearn.feature_selection import (
+    SelectKBest,
+    SelectPercentile,
+    f_classif,
+    chi2,
+    mutual_info_classif,
+)
 
 from sklearn import decomposition
 from sklearn.manifold import MDS
@@ -53,21 +75,28 @@ from tensorflow.keras.layers import Conv1D, MaxPooling1D
 from tensorflow.keras.models import model_from_json, load_model
 from tensorflow.keras.regularizers import *
 from tensorflow.keras.callbacks import CSVLogger
+
 # from tensorflow.keras import backend as K
 
-import matplotlib.pyplot as plt # for making plots
+import matplotlib.pyplot as plt  # for making plots
 import seaborn as sns
-sns.set(context="paper",
-        style="whitegrid",
-        palette="deep",
-        font_scale=2.0,
-        color_codes=True,
-        rc=None)
-# %matplotlib inline
-plt.rcParams["figure.figsize"] = [6,4]
 
-#%%
-os.environ['PYTHONHASHSEED'] = '0'
+sns.set(
+    context="paper",
+    style="whitegrid",
+    palette="deep",
+    font_scale=2.0,
+    color_codes=True,
+    rc=None,
+)
+# %matplotlib inline
+plt.rcParams["figure.figsize"] = [6, 4]
+
+# import local utils script
+import plotting_utils
+
+# %%
+os.environ["PYTHONHASHSEED"] = "0"
 
 np.random.seed(42)
 
@@ -76,11 +105,14 @@ rn.seed(12345)
 tf.random.set_seed(1234)
 
 # gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction = 0.5)
-gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction = 0.5)
+gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.5)
 
 
 # sess = tf.compat.v1.Session(graph = tf.get_default_graph(), config = tf.ConfigProto(gpu_options = gpu_options))
-sess = tf.compat.v1.Session(graph = tf.compat.v1.get_default_graph(), config = tf.compat.v1.ConfigProto(gpu_options = gpu_options, log_device_placement = True))
+sess = tf.compat.v1.Session(
+    graph=tf.compat.v1.get_default_graph(),
+    config=tf.compat.v1.ConfigProto(gpu_options=gpu_options, log_device_placement=True),
+)
 tf.compat.v1.keras.backend.set_session(sess)
 
 
@@ -115,7 +147,7 @@ tf.compat.v1.keras.backend.set_session(sess)
 # df_2.head(10)
 
 # #%%
-# # Concat the data 
+# # Concat the data
 
 # training_data = pd.concat([df, df_2], axis = 0, join = 'outer')
 
@@ -157,11 +189,13 @@ tf.compat.v1.keras.backend.set_session(sess)
 # set_to_test = training_data.iloc[val_index_split,:]
 # set_to_test.to_csv("D:\Projects\Anophles Funestus Age Grading (WILD)\set_to_test_an_fun_new.csv")
 
-#%%
+# %%
 
 # Upload An. funestus train data for model training
 
-train_data = pd.read_csv("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\set_to_train_an_fun_new.csv")
+train_data = pd.read_csv(
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\set_to_train_an_fun_new.csv"
+)
 print(train_data.head())
 
 print(train_data.shape)
@@ -170,131 +204,95 @@ print(train_data.shape)
 print(Counter(train_data["Cat3"]))
 
 # drops columns of no interest
-train_data = train_data.drop(['Unnamed: 0'], axis = 1)
+train_data = train_data.drop(["Unnamed: 0"], axis=1)
 train_data.head(10)
 
 ##############################################
 
 
-#%%
+# %%
 
 # create a new folder for the CNN outputs
 
-def build_folder(Fold, to_build = False):
+
+def build_folder(Fold, to_build=False):
     if not os.path.isdir(Fold):
         if to_build == True:
             os.mkdir(Fold)
         else:
-            print('Directory does not exists, not creating directory!')
+            print("Directory does not exists, not creating directory!")
     else:
         if to_build == True:
-            raise NameError('Directory already exists, cannot be created!')
+            raise NameError("Directory already exists, cannot be created!")
 
-#%%
 
-# This normalizes the confusion matrix and ensures neat plotting for all outputs.
-# Function for plotting confusion matrcies
-
-def plot_confusion_matrix(cm, classes, output, save_path, model_name, fold,
-                          normalize=True,
-                          title='Confusion matrix',
-                          xrotation=0,
-                          yrotation=0,
-                          cmap=plt.cm.Purples,
-                          printout=False):
-    """
-    This function prints and plots the confusion matrix.
-    Normalization can be applied by setting `normalize=True`.
-    """
-    if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        if printout:
-            print("Normalized confusion matrix")
-    else:
-        if printout:
-            print('Confusion matrix')
-
-    if printout:
-        print(cm)
-    
-    plt.figure(figsize=(6,4))
-
-    plt.imshow(cm, interpolation='nearest', vmin = 0.2, vmax = 1.0, cmap = cmap)
-    # plt.title([title +' - '+ model_name])
-    plt.colorbar()
-    classes = classes[0]
-    tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=xrotation)
-    plt.yticks(tick_marks, classes, rotation=yrotation)
-
-    fmt = '.2f' if normalize else 'd'
-    thresh = cm.max() / 2.
-    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], fmt),
-                 horizontalalignment="center",
-                 color="white" if cm[i, j] > thresh else "black")
-
-    plt.tight_layout()
-    plt.ylabel('True label', weight = 'bold')
-    plt.xlabel('Predicted label', weight = 'bold')
-    plt.savefig((save_path + "Confusion_Matrix_" + model_name + "_" + fold +"_"+ ".png"), dpi = 500, bbox_inches="tight")
-    plt.savefig((save_path + "Confusion_Matrix_" + model_name + "_" + fold +"_"+ ".pdf"), dpi = 500, bbox_inches="tight")
-    plt.close()
-
-#%%
-# Visualizing outputs
-
-# for visualizing losses and metrics once the neural network fold is trained
-def visualize(histories, save_path, model_name, fold, classes, outputs, predicted, true):
-    # Sort out predictions and true labels
-    # for label_predictions_arr, label_true_arr, classes, outputs in zip(predicted, true, classes, outputs):
-#     print('visualize predicted classes', predicted)
-#     print('visualize true classes', true)
-    classes_pred = np.argmax(predicted, axis=-1)
-    classes_true = np.argmax(true, axis=-1)
-    print(classes_pred.shape)
-    print(classes_true.shape)
-    cnf_matrix = confusion_matrix(classes_true, classes_pred)
-    plot_confusion_matrix(cnf_matrix, classes, outputs, save_path, model_name, fold)
-
-#%%
+# %%
 # Data logging
 # for logging data associated with the model
 
+
 def log_data(log, name, fold, save_path):
-    f = open((save_path+name+'_'+str(fold)+'_log.txt'), 'w')
+    f = open((save_path + name + "_" + str(fold) + "_log.txt"), "w")
     np.savetxt(f, log)
     f.close()
 
-#%%
+
+# %%
 
 # Graphing the training data and validation
- 
+
+
 def graph_history(history, model_name, model_ver_num, fold, save_path):
-    #not_validation = list(filter(lambda x: x[0:3] != "val", history.history.keys()))
-    print('history.history.keys : {}'.format(history.history.keys()))
+    # not_validation = list(filter(lambda x: x[0:3] != "val", history.history.keys()))
+    print("history.history.keys : {}".format(history.history.keys()))
     filtered = filter(lambda x: x[0:3] != "val", history.history.keys())
     not_validation = list(filtered)
     for i in not_validation:
         plt.figure(figsize=(6, 4))
         # plt.title(i+"/ "+"val_"+i)
         plt.plot(history.history[i], label=i)
-        plt.plot(history.history["val_"+i], label="val_"+i)
+        plt.plot(history.history["val_" + i], label="val_" + i)
         plt.legend()
         plt.tight_layout()
         plt.grid(False)
-        plt.xlabel("epoch", weight = 'bold')
+        plt.xlabel("epoch", weight="bold")
         plt.ylabel(i)
-        plt.savefig(save_path +model_name+"_"+str(model_ver_num)+"_"+str(fold)+"_"+i + ".png", dpi = 500, bbox_inches="tight")
-        plt.savefig(save_path +model_name+"_"+str(model_ver_num)+"_"+str(fold)+"_"+i + ".pdf", dpi = 500, bbox_inches="tight")
+        plt.savefig(
+            save_path
+            + model_name
+            + "_"
+            + str(model_ver_num)
+            + "_"
+            + str(fold)
+            + "_"
+            + i
+            + ".png",
+            dpi=500,
+            bbox_inches="tight",
+        )
+        plt.savefig(
+            save_path
+            + model_name
+            + "_"
+            + str(model_ver_num)
+            + "_"
+            + str(fold)
+            + "_"
+            + i
+            + ".pdf",
+            dpi=500,
+            bbox_inches="tight",
+        )
         plt.close()
 
-# Graphing the averaged training and validation histories 
- 
+
+# Graphing the averaged training and validation histories
+
 # when plotting, smooth out the points by some factor (0.5 = rough, 0.99 = smooth)
 # method taken from `Deep Learning with Python` by François Chollet
 
-def smooth_curve(points, factor = 0.75):
+
+def smooth_curve(points, factor=0.75):
     smoothed_points = []
     for point in points:
         if smoothed_points:
@@ -306,76 +304,77 @@ def smooth_curve(points, factor = 0.75):
 
 
 def set_plot_history_data(ax, history, which_graph):
-
-    if which_graph == 'accuracy':
-        train = smooth_curve(history['accuracy'])
-        valid = smooth_curve(history['val_accuracy'])
+    if which_graph == "accuracy":
+        train = smooth_curve(history["accuracy"])
+        valid = smooth_curve(history["val_accuracy"])
 
     epochs = range(1, len(train) + 1)
-        
-    trim = 0 # remove first 5 epochs
+
+    trim = 0  # remove first 5 epochs
     # when graphing loss the first few epochs may skew the (loss) graph
-    
-    ax.plot(epochs[trim:], train[trim:], 'b', label = ('accuracy'))
-    ax.plot(epochs[trim:], train[trim:], 'b', linewidth = 15, alpha = 0.1)
-    
-    ax.plot(epochs[trim:], valid[trim:], 'orange', label = ('val_accuracy'))
-    ax.plot(epochs[trim:], valid[trim:], 'orange', linewidth = 15, alpha = 0.1)
+
+    ax.plot(epochs[trim:], train[trim:], "b", label=("accuracy"))
+    ax.plot(epochs[trim:], train[trim:], "b", linewidth=15, alpha=0.1)
+
+    ax.plot(epochs[trim:], valid[trim:], "orange", label=("val_accuracy"))
+    ax.plot(epochs[trim:], valid[trim:], "orange", linewidth=15, alpha=0.1)
 
 
 def graph_history_averaged(combined_history):
-    print('averaged_histories.keys : {}'.format(combined_history.keys()))
-    fig, (ax1) = plt.subplots(nrows = 1,
-                                   ncols = 1,
-                                   figsize = (6, 4),
-                                   sharex = True,
-                                   )
+    print("averaged_histories.keys : {}".format(combined_history.keys()))
+    fig, (ax1) = plt.subplots(
+        nrows=1,
+        ncols=1,
+        figsize=(6, 4),
+        sharex=True,
+    )
 
-    set_plot_history_data(ax1, combined_history, 'accuracy')
-    
+    set_plot_history_data(ax1, combined_history, "accuracy")
+
     # Accuracy graph
-    ax1.set_ylabel('Accuracy', weight = 'bold')
-    plt.xlabel('Epoch', weight = 'bold')
+    ax1.set_ylabel("Accuracy", weight="bold")
+    plt.xlabel("Epoch", weight="bold")
     # ax1.set_ylim(bottom = 0.3, top = 1.0)
-    ax1.legend(loc = 'lower right')
-    ax1.set_yticks(np.arange(0.3, 1.0 + 0.1, step = 0.1))
-    ax1.spines['top'].set_visible(False)
-    ax1.spines['right'].set_visible(False)
-    ax1.xaxis.set_ticks_position('bottom')
-    ax1.spines['bottom'].set_visible(True)
+    ax1.legend(loc="lower right")
+    ax1.set_yticks(np.arange(0.3, 1.0 + 0.1, step=0.1))
+    ax1.spines["top"].set_visible(False)
+    ax1.spines["right"].set_visible(False)
+    ax1.xaxis.set_ticks_position("bottom")
+    ax1.spines["bottom"].set_visible(True)
 
     plt.tight_layout()
     plt.grid(False)
-    plt.savefig("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\Averaged_graph.png", dpi = 500, bbox_inches="tight")
+    plt.savefig(
+        "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\Averaged_graph.png",
+        dpi=500,
+        bbox_inches="tight",
+    )
     plt.close()
-    
 
-#%%
-# This takes a list of dictionaries, and combines them into a dictionary in which each key maps to a 
+
+# %%
+# This takes a list of dictionaries, and combines them into a dictionary in which each key maps to a
 # list of all the appropriate values from the parameter dictionaries
 
+
 def combine_dictionaries(list_of_dictionaries):
-    
     combined_dictionaries = {}
-    
+
     for individual_dictionary in list_of_dictionaries:
-        
         for key_value in individual_dictionary:
-            
             if key_value not in combined_dictionaries:
-                
                 combined_dictionaries[key_value] = []
             combined_dictionaries[key_value].append(individual_dictionary[key_value])
 
     return combined_dictionaries
 
 
-#%%
+# %%
 
 # right now, no error checking, when all lists are either of same length or not the same length
 
+
 def find_mean_from_combined_dicts(combined_dicts):
-    
     dict_of_means = {}
 
     for key_value in combined_dicts:
@@ -387,106 +386,133 @@ def find_mean_from_combined_dicts(combined_dicts):
         temp_array[:] = np.NaN
 
         for i, j in enumerate(combined_dicts[key_value]):
-            temp_array[i][0:len(j)] = j
+            temp_array[i][0 : len(j)] = j
         mean_value = np.nanmean(temp_array, axis=0)
 
         dict_of_means[key_value] = mean_value.tolist()
-    
+
     return dict_of_means
 
 
-#%%
+# %%
 # Function to create deep CNN
 
-# This function takes as an input a list of dictionaries. Each element in the list is a new hidden layer in the model. For each 
+# This function takes as an input a list of dictionaries. Each element in the list is a new hidden layer in the model. For each
 # layer the dictionary defines the layer to be used.
 
+
 def create_models(model_shape, input_layer_dim):
-    
     # parameter rate for l2 regularization
     regConst = 0.01
-    
+
     # defining a stochastic gradient boosting optimizer
-    sgd = tf.keras.optimizers.SGD(lr = 0.001, momentum = 0.9, 
-                                    nesterov = True, clipnorm = 1.)
-    
+    sgd = tf.keras.optimizers.SGD(lr=0.001, momentum=0.9, nesterov=True, clipnorm=1.0)
+
     # define categorical_crossentrophy as the loss function (multi-class problem i.e. 3 age classes)
-    
-    cce = 'categorical_crossentropy'
+
+    cce = "categorical_crossentropy"
     # bce = 'binary_crossentropy'
 
     # input shape vector
 
-    # change the input shape to avoid learning feautures independently. By changing the input shape to 
-    # (input_layer_dim, ) it will learn some combination of feautures with the learnable weights of the 
+    # change the input shape to avoid learning feautures independently. By changing the input shape to
+    # (input_layer_dim, ) it will learn some combination of feautures with the learnable weights of the
     # network
 
-    input_vec = tf.keras.Input(name = 'input', shape = (input_layer_dim, )) 
+    input_vec = tf.keras.Input(name="input", shape=(input_layer_dim,))
 
-    for i, layerwidth in zip(range(len(model_shape)),model_shape):
+    for i, layerwidth in zip(range(len(model_shape)), model_shape):
         if i == 0:
-            if model_shape[i]['type'] == 'c':
-
-                # Convolution1D layer, which will learn filters from spectra 
+            if model_shape[i]["type"] == "c":
+                # Convolution1D layer, which will learn filters from spectra
                 # signals with maxpooling1D and batch normalization:
 
-                xd = tf.keras.layers.Conv1D(name=('Conv'+str(i+1)), filters=model_shape[i]['filter'], 
-                 kernel_size = model_shape[i]['kernel'], strides = model_shape[i]['stride'],
-                 activation = 'relu',
-                 kernel_regularizer = regularizers.l2(regConst), 
-                 kernel_initializer = 'he_normal')(input_vec)
-                xd = tf.keras.layers.BatchNormalization(name=('batchnorm_'+str(i+1)))(xd)
-                xd = tf.keras.layers.MaxPooling1D(pool_size=(model_shape[i]['pooling']))(xd)
-                
+                xd = tf.keras.layers.Conv1D(
+                    name=("Conv" + str(i + 1)),
+                    filters=model_shape[i]["filter"],
+                    kernel_size=model_shape[i]["kernel"],
+                    strides=model_shape[i]["stride"],
+                    activation="relu",
+                    kernel_regularizer=regularizers.l2(regConst),
+                    kernel_initializer="he_normal",
+                )(input_vec)
+                xd = tf.keras.layers.BatchNormalization(
+                    name=("batchnorm_" + str(i + 1))
+                )(xd)
+                xd = tf.keras.layers.MaxPooling1D(
+                    pool_size=(model_shape[i]["pooling"])
+                )(xd)
+
                 # A hidden layer
 
-            elif model_shape[i]['type'] == 'd':
-                xd = tf.keras.layers.Dense(name=('d'+str(i+1)), units=model_shape[i]['width'], activation='relu', 
-                 kernel_regularizer = regularizers.l2(regConst), 
-                 kernel_initializer='he_normal')(input_vec)
-                xd = tf.keras.layers.BatchNormalization(name=('batchnorm_'+str(i+1)))(xd) 
-                xd = tf.keras.layers.Dropout(name=('dout'+str(i+1)), rate=0.5)(xd)
+            elif model_shape[i]["type"] == "d":
+                xd = tf.keras.layers.Dense(
+                    name=("d" + str(i + 1)),
+                    units=model_shape[i]["width"],
+                    activation="relu",
+                    kernel_regularizer=regularizers.l2(regConst),
+                    kernel_initializer="he_normal",
+                )(input_vec)
+                xd = tf.keras.layers.BatchNormalization(
+                    name=("batchnorm_" + str(i + 1))
+                )(xd)
+                xd = tf.keras.layers.Dropout(name=("dout" + str(i + 1)), rate=0.5)(xd)
 
         else:
-            if model_shape[i]['type'] == 'c':
-                
+            if model_shape[i]["type"] == "c":
                 # convulational1D layer
 
-                xd = tf.keras.layers.Conv1D(name=('Conv'+str(i+1)), filters=model_shape[i]['filter'], 
-                 kernel_size = model_shape[i]['kernel'], strides = model_shape[i]['stride'],
-                 activation = 'relu',
-                 kernel_regularizer = regularizers.l2(regConst), 
-                 kernel_initializer='he_normal')(xd)
-                xd = tf.keras.layers.BatchNormalization(name=('batchnorm_'+str(i+1)))(xd)
-                xd = tf.keras.layers.MaxPooling1D(pool_size=(model_shape[i]['pooling']))(xd)
-                
-            elif model_shape[i]['type'] == 'd':
-                if model_shape[i-1]['type'] == 'c':
+                xd = tf.keras.layers.Conv1D(
+                    name=("Conv" + str(i + 1)),
+                    filters=model_shape[i]["filter"],
+                    kernel_size=model_shape[i]["kernel"],
+                    strides=model_shape[i]["stride"],
+                    activation="relu",
+                    kernel_regularizer=regularizers.l2(regConst),
+                    kernel_initializer="he_normal",
+                )(xd)
+                xd = tf.keras.layers.BatchNormalization(
+                    name=("batchnorm_" + str(i + 1))
+                )(xd)
+                xd = tf.keras.layers.MaxPooling1D(
+                    pool_size=(model_shape[i]["pooling"])
+                )(xd)
+
+            elif model_shape[i]["type"] == "d":
+                if model_shape[i - 1]["type"] == "c":
                     xd = tf.keras.layers.Flatten()(xd)
-                    
-                xd = tf.keras.layers.Dropout(name=('dout'+str(i+1)), rate=0.5)(xd)
-                xd = tf.keras.layers.Dense(name=('d'+str(i+1)), units=model_shape[i]['width'], activation='relu', 
-                 kernel_regularizer = regularizers.l2(regConst), 
-                 kernel_initializer = 'he_normal')(xd)
-                xd = tf.keras.layers.BatchNormalization(name=('batchnorm_'+str(i+1)))(xd) 
-        
-    # Project the vector onto a 3 unit output layer, and squash it with a 
+
+                xd = tf.keras.layers.Dropout(name=("dout" + str(i + 1)), rate=0.5)(xd)
+                xd = tf.keras.layers.Dense(
+                    name=("d" + str(i + 1)),
+                    units=model_shape[i]["width"],
+                    activation="relu",
+                    kernel_regularizer=regularizers.l2(regConst),
+                    kernel_initializer="he_normal",
+                )(xd)
+                xd = tf.keras.layers.BatchNormalization(
+                    name=("batchnorm_" + str(i + 1))
+                )(xd)
+
+    # Project the vector onto a 3 unit output layer, and squash it with a
     # sigmoid activation:
     # x_age_group will have decoded inputs
 
-    x_age_group     = tf.keras.layers.Dense(name = 'age_group', units = 2, 
-                     activation = 'softmax',
-                    #   activation = 'sigmoid',
-                     kernel_regularizer = regularizers.l2(regConst), 
-                     kernel_initializer = 'he_normal')(xd)
+    x_age_group = tf.keras.layers.Dense(
+        name="age_group",
+        units=2,
+        activation="softmax",
+        #   activation = 'sigmoid',
+        kernel_regularizer=regularizers.l2(regConst),
+        kernel_initializer="he_normal",
+    )(xd)
 
     outputs = []
-    for i in ['x_age_group']:
+    for i in ["x_age_group"]:
         outputs.append(locals()[i])
-    model = Model(inputs = input_vec, outputs = outputs)
-    
-    model.compile(loss = cce, metrics = ['accuracy'], 
-                  optimizer=sgd)
+    model = Model(inputs=input_vec, outputs=outputs)
+
+    model.compile(loss=cce, metrics=["accuracy"], optimizer=sgd)
     model.summary()
     return model
 
@@ -495,53 +521,53 @@ def create_models(model_shape, input_layer_dim):
 ######### Dimension reduction with principal component analysis (PCA) #######
 #############################################################################
 
-#%%
+# %%
 Age = []
 
-for row in train_data['Cat3']:
-    if row == '01D':
+for row in train_data["Cat3"]:
+    if row == "01D":
         Age.append(1)
-    
-    elif row == '02D':
+
+    elif row == "02D":
         Age.append(2)
-    
-    elif row == '03D':
+
+    elif row == "03D":
         Age.append(3)
 
-    elif row == '04D':
+    elif row == "04D":
         Age.append(4)
 
-    elif row == '05D':
+    elif row == "05D":
         Age.append(5)
 
-    elif row == '06D':
+    elif row == "06D":
         Age.append(6)
 
-    elif row == '07D':
+    elif row == "07D":
         Age.append(7)
 
-    elif row == '08D':
+    elif row == "08D":
         Age.append(8)
 
-    elif row == '09D':
+    elif row == "09D":
         Age.append(9)
 
-    elif row == '10D':
+    elif row == "10D":
         Age.append(10)
 
-    elif row == '11D':
+    elif row == "11D":
         Age.append(11)
 
-    elif row == '12D':
+    elif row == "12D":
         Age.append(12)
 
-    elif row == '13D':
+    elif row == "13D":
         Age.append(13)
 
-    elif row == '14D':
+    elif row == "14D":
         Age.append(14)
 
-    elif row == '15D':
+    elif row == "15D":
         Age.append(15)
 
     else:
@@ -549,44 +575,44 @@ for row in train_data['Cat3']:
 
 print(Age)
 
-train_data['Age'] = Age
+train_data["Age"] = Age
 
 # drop the column with Chronological Age and keep the age structure
-train_data = train_data.drop(['Cat3'], axis = 1) 
+train_data = train_data.drop(["Cat3"], axis=1)
 train_data.head(5)
 
 
-#%%
+# %%
 
 # Dimension reduction with principal component analysis
 
-# The idea here is to reduce the dimensianality of a dataset consisting of a large number 
+# The idea here is to reduce the dimensianality of a dataset consisting of a large number
 # of related variables while retaining as much variance in the data as possible. The algorthm
-# finds a set of new varibles (principal componets) that the original variables are just 
+# finds a set of new varibles (principal componets) that the original variables are just
 # linear combinations.
 
 # define X (matrix of features) and y (vector of labels)
 
-X = train_data.iloc[:,:-1] # select all columns except the first one 
+X = train_data.iloc[:, :-1]  # select all columns except the first one
 y = train_data["Age"]
 
-print('shape of X : {}'.format(X.shape))
-print('shape of y : {}'.format(y.shape))
+print("shape of X : {}".format(X.shape))
+print("shape of y : {}".format(y.shape))
 seed = 42
 
 # A pipeline containing standardization and PCA algorithm
 
 scl = StandardScaler()
-pca_pipe = decomposition.PCA(n_components = 4)
+pca_pipe = decomposition.PCA(n_components=4)
 
 
-#%%
+# %%
 
-# The size of the lower-dimensional space in which the points are embedded in MDS is one of the 
+# The size of the lower-dimensional space in which the points are embedded in MDS is one of the
 # important hyper-parameters
 
-# A simple method to choose a value of this parameter is to run MDS on different values of 
-# n_components and plot the stress_ value for each embedding. Given that the stress_ value decreases 
+# A simple method to choose a value of this parameter is to run MDS on different values of
+# n_components and plot the stress_ value for each embedding. Given that the stress_ value decreases
 # with higher dimensions - you pick a point that has a fair tradeoff between stress_ and n_components
 
 # stress = []
@@ -603,7 +629,7 @@ pca_pipe = decomposition.PCA(n_components = 4)
 #     stress.append(mds.stress_)
 
 
-# # Plot stress vs. n_components 
+# # Plot stress vs. n_components
 # sns.set(context = 'paper',
 #         style = 'whitegrid',
 #         palette = 'deep',
@@ -613,14 +639,14 @@ pca_pipe = decomposition.PCA(n_components = 4)
 
 # plt.figure(figsize = (6, 4))
 # # plt.style.use('ggplot')
-   
+
 # plt.plot(range(1, max_range), stress)
 # plt.xticks(range(1, max_range, 2))
 # plt.xlabel('n_components')
 # plt.ylabel('stress')
 # plt.show()
 
-#%%
+# %%
 
 # start_time = time()
 
@@ -636,14 +662,14 @@ pca_pipe = decomposition.PCA(n_components = 4)
 # end_time = time()
 # print('mds Run time : {} m'.format((end_time-start_time)/60))
 
-#%%
+# %%
 
-# Transform data into  principal componets 
-scaler = scl.fit(X = X)
-X_new = scaler.transform(X = X)
+# Transform data into  principal componets
+scaler = scl.fit(X=X)
+X_new = scaler.transform(X=X)
 
 age_pca = pca_pipe.fit_transform(X_new)
-print('First five observation : {}'.format(age_pca[:5]))
+print("First five observation : {}".format(age_pca[:5]))
 
 explained_var = pca_pipe.explained_variance_ratio_
 # print('Explained variance : {}'.format(explained_var))
@@ -654,7 +680,7 @@ X = np.asarray(age_pca)
 y = np.asarray(y)
 print(np.unique(y))
 
-#%%
+# %%
 # sns.set(context = 'paper',
 #         style = 'whitegrid',
 #         palette = 'deep',
@@ -678,7 +704,7 @@ print(np.unique(y))
 ############################################################
 
 
-#%%
+# %%
 # Renaming the age group into two classes
 # Oganises the data into a format of lists of data, classes, labels.
 
@@ -688,22 +714,25 @@ y_age_group = np.where((y >= 10), 1, y_age_group)
 y_age_groups_list = [[ages] for ages in y_age_group]
 age_group = MultiLabelBinarizer().fit_transform(np.array(y_age_groups_list))
 # print('age_group', age_group)
-age_group_classes = ["1-9", "10-16"] 
+age_group_classes = ["1-9", "10-16"]
 
 # Labels default - all classification
-labels_default, classes_default, outputs_default = [age_group], [age_group_classes], ['x_age_group']
+labels_default, classes_default, outputs_default = (
+    [age_group],
+    [age_group_classes],
+    ["x_age_group"],
+)
 
 
-#%%
+# %%
 
 # Function to train the model
 
-# This function will split the data into training and validation, and call the create models function. 
+# This function will split the data into training and validation, and call the create models function.
 # This fucntion returns the model and training history.
 
 
 def train_models(model_to_test, save_path):
-
     model_shape = model_to_test["model_shape"][0]
     model_name = model_to_test["model_name"][0]
     input_layer_dim = model_to_test["input_layer_dim"][0]
@@ -718,21 +747,41 @@ def train_models(model_to_test, save_path):
 
     model = create_models(model_shape, input_layer_dim)
 
-#   model.summary()
-    
-    history = model.fit(x = X_train, 
-                        y = y_train,
-                        batch_size = 32, 
-                        verbose = 1, 
-                        epochs = 8000,
-                        validation_data = (X_val, y_val),
-                        callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_loss', 
-                                    patience=400, verbose=1, mode='auto'), 
-                                    CSVLogger(save_path+model_name+"_"+str(model_ver_num)+'.csv', append=True, separator=';')])
+    #   model.summary()
 
-    model.save((save_path+model_name+"_"+str(model_ver_num)+"_"+str(fold)+"_"+'Model.h5'))
+    history = model.fit(
+        x=X_train,
+        y=y_train,
+        batch_size=32,
+        verbose=1,
+        epochs=8000,
+        validation_data=(X_val, y_val),
+        callbacks=[
+            tf.keras.callbacks.EarlyStopping(
+                monitor="val_loss", patience=400, verbose=1, mode="auto"
+            ),
+            CSVLogger(
+                save_path + model_name + "_" + str(model_ver_num) + ".csv",
+                append=True,
+                separator=";",
+            ),
+        ],
+    )
+
+    model.save(
+        (
+            save_path
+            + model_name
+            + "_"
+            + str(model_ver_num)
+            + "_"
+            + str(fold)
+            + "_"
+            + "Model.h5"
+        )
+    )
     graph_history(history, model_name, model_ver_num, fold, save_path)
-            
+
     return model, history
 
 
@@ -745,13 +794,12 @@ def train_models(model_to_test, save_path):
 # Organize outputs and call visualization for plotting and graphing.
 
 
-
 outdir = "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold"
 build_folder(outdir, False)
-  
+
 
 # set model parameters
-# model size when data dimension is reduced to 8 principle componets 
+# model size when data dimension is reduced to 8 principle componets
 
 # Options
 # Convolutional Layer:
@@ -767,31 +815,32 @@ build_folder(outdir, False)
 #     type = 'd'
 #     width = option width of the layer
 
-model_size = [#{'type':'c', 'filter':8, 'kernel':2, 'stride':1, 'pooling':1}, 
-            #  {'type':'c', 'filter':8, 'kernel':2, 'stride':1, 'pooling':1},
-            #  {'type':'c', 'filter':8, 'kernel':2, 'stride':1, 'pooling':1},
-             {'type':'d', 'width':500},
-             {'type':'d', 'width':500},
-             {'type':'d', 'width':500},
-             {'type':'d', 'width':500},
-             {'type':'d', 'width':500},
-             {'type':'d', 'width':500},
-             {'type':'d', 'width':500}]
+model_size = [  # {'type':'c', 'filter':8, 'kernel':2, 'stride':1, 'pooling':1},
+    #  {'type':'c', 'filter':8, 'kernel':2, 'stride':1, 'pooling':1},
+    #  {'type':'c', 'filter':8, 'kernel':2, 'stride':1, 'pooling':1},
+    {"type": "d", "width": 500},
+    {"type": "d", "width": 500},
+    {"type": "d", "width": 500},
+    {"type": "d", "width": 500},
+    {"type": "d", "width": 500},
+    {"type": "d", "width": 500},
+    {"type": "d", "width": 500},
+]
 
 
 # Name the model
-model_name = 'CNN'
+model_name = "CNN"
 label = labels_default
-    
+
 # Split data into 10 folds for training/testing
-# Define cross-validation strategy 
+# Define cross-validation strategy
 
 num_folds = 5
-kf = KFold(n_splits=num_folds, shuffle=True, random_state = seed)
+kf = KFold(n_splits=num_folds, shuffle=True, random_state=seed)
 
 # Features
 features = X
-    
+
 histories = []
 averaged_histories = []
 fold = 1
@@ -799,12 +848,12 @@ train_model = True
 
 # Name a folder for the outputs to go into
 
-savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens")            
+savedir = outdir + "\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens"
 build_folder(savedir, True)
-savedir = (outdir+"\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\l")            
+savedir = outdir + "\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\l"
 
 # start model training on standardized data
-   
+
 start_time = time()
 save_predicted = []
 save_true = []
@@ -816,26 +865,25 @@ num_rounds = 2
 #     SEED = SEED = np.random.randint(0, 81470)
 
 for train_index, test_index in kf.split(features):
-
     # Split data into test and train
 
     X_train, X_test = features[train_index], features[test_index]
-    y_train, y_test = list(map(lambda y:y[train_index], label)), list(map(lambda y:y[test_index], label))
+    y_train, y_test = list(map(lambda y: y[train_index], label)), list(
+        map(lambda y: y[test_index], label)
+    )
 
-    # Further divide training dataset into train and validation dataset 
+    # Further divide training dataset into train and validation dataset
     # with an 90:10 split
-            
+
     validation_size = 0.1
-    X_train, X_val, y_train, y_val = train_test_split(X_train,
-                                                *y_train, test_size = validation_size, random_state = seed)
-            
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_train, *y_train, test_size=validation_size, random_state=seed
+    )
 
     # expanding to one dimension, because the conv layer expcte to, 1
     X_train = X_train.reshape([X_train.shape[0], -1])
     X_val = X_val.reshape([X_val.shape[0], -1])
     X_test = X_test.reshape([X_test.shape[0], -1])
-
-
 
     # Check the sizes of all newly created datasets
     print("Shape of X_train:", X_train.shape)
@@ -844,24 +892,23 @@ for train_index, test_index in kf.split(features):
     print("Shape of y_train:", y_train.shape)
     print("Shape of y_val:", y_val.shape)
     # print("Shape of y_test:", y_test.shape)
-            
 
     input_layer_dim = len(X[0])
 
     model_to_test = {
-        "model_shape" : [model_size], # defines the hidden layers of the model
-        "model_name"  : [model_name],
-        "input_layer_dim"  : [input_layer_dim], # size of input layer
-        "model_ver_num"  : [0],
-        "fold"  : [fold], # kf.split number on
-        "labels"   : [y_train],
-        "features" : [X_train],
-        "classes"  : [classes_default],
-        "outputs"   : [outputs_default],
+        "model_shape": [model_size],  # defines the hidden layers of the model
+        "model_name": [model_name],
+        "input_layer_dim": [input_layer_dim],  # size of input layer
+        "model_ver_num": [0],
+        "fold": [fold],  # kf.split number on
+        "labels": [y_train],
+        "features": [X_train],
+        "classes": [classes_default],
+        "outputs": [outputs_default],
         # "compile_loss": [{'age_group': 'categorical_crossentropy'}],
-        "compile_loss": [{'age_group': 'binary_crossentropy'}],
-        "compile_metrics" :[{'age_group': 'accuracy'}]
-        }
+        "compile_loss": [{"age_group": "binary_crossentropy"}],
+        "compile_metrics": [{"age_group": "accuracy"}],
+    }
 
     # Call function to train all the models from the dictionary
     model, history = train_models(model_to_test, savedir)
@@ -874,11 +921,10 @@ for train_index, test_index in kf.split(features):
 
     # change the dimension of y_test to array
     y_test = np.asarray(y_test)
-    y_test = np.squeeze(y_test) # remove any single dimension entries from the arrays
+    y_test = np.squeeze(y_test)  # remove any single dimension entries from the arrays
 
-
-    print('y predicted shape', y_predicted.shape)
-    print('y_test', y_test.shape)
+    print("y predicted shape", y_predicted.shape)
+    print("y_test", y_test.shape)
 
     # save predicted and true value in each iteration for plotting averaged confusion matrix
 
@@ -886,13 +932,21 @@ for train_index, test_index in kf.split(features):
         save_predicted.append(pred)
         save_true.append(tru)
 
-
     hist = history.history
     averaged_histories.append(hist)
 
     # Plotting confusion matrix for each fold/iteration
 
-    visualize(histories, savedir, model_name, str(fold), classes_default, outputs_default, y_predicted, y_test)
+    visualize(
+        histories,
+        savedir,
+        model_name,
+        str(fold),
+        classes_default,
+        outputs_default,
+        y_predicted,
+        y_test,
+    )
     # log_data(X_test, 'test_index', fold, savedir)
 
     fold += 1
@@ -908,27 +962,39 @@ for train_index, test_index in kf.split(features):
 
 save_predicted = np.asarray(save_predicted)
 save_true = np.asarray(save_true)
-print('save predicted shape', save_predicted.shape)
-print('save.true shape', save_true.shape)
+print("save predicted shape", save_predicted.shape)
+print("save.true shape", save_true.shape)
 
 # Plotting an averaged confusion matrix
 
-visualize(1, savedir, model_name, "Averaged", classes_default, outputs_default, save_predicted, save_true)
+visualize(
+    1,
+    savedir,
+    model_name,
+    "Averaged",
+    classes_default,
+    outputs_default,
+    save_predicted,
+    save_true,
+)
 
 end_time = time()
-print('Run time : {} s'.format(end_time-start_time))
-print('Run time : {} m'.format((end_time-start_time)/60))
-print('Run time : {} h'.format((end_time-start_time)/3600))
+print("Run time : {} s".format(end_time - start_time))
+print("Run time : {} m".format((end_time - start_time) / 60))
+print("Run time : {} h".format((end_time - start_time) / 3600))
 
-#%%
+# %%
 
 # combine all dictionaries together
 
 combn_dictionar = combine_dictionaries(averaged_histories)
-with open('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\combined_history_dictionaries.txt', 'w') as outfile:
-     json.dump(combn_dictionar, outfile)
+with open(
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\combined_history_dictionaries.txt",
+    "w",
+) as outfile:
+    json.dump(combn_dictionar, outfile)
 
-# find the average of all dictionaries 
+# find the average of all dictionaries
 
 combn_dictionar_average = find_mean_from_combined_dicts(combn_dictionar)
 
@@ -936,65 +1002,67 @@ combn_dictionar_average = find_mean_from_combined_dicts(combn_dictionar)
 graph_history_averaged(combn_dictionar_average)
 
 # %%
-# Loading dataset for prediction 
+# Loading dataset for prediction
 
-df_new = pd.read_csv("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\set_to_test_an_fun_new.csv")
+df_new = pd.read_csv(
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\set_to_test_an_fun_new.csv"
+)
 print(df_new.head())
 
 # Checking class distribution in the data
 print(Counter(df_new["Cat3"]))
 
 # drops columns of no interest
-df_new = df_new.drop(['Unnamed: 0'], axis=1)
+df_new = df_new.drop(["Unnamed: 0"], axis=1)
 df_new.head(10)
 
-#%%
+# %%
 Age_2 = []
 
-for row in df_new['Cat3']:
-    if row == '01D':
+for row in df_new["Cat3"]:
+    if row == "01D":
         Age_2.append(1)
-    
-    elif row == '02D':
+
+    elif row == "02D":
         Age_2.append(2)
-    
-    elif row == '03D':
+
+    elif row == "03D":
         Age_2.append(3)
 
-    elif row == '04D':
+    elif row == "04D":
         Age_2.append(4)
 
-    elif row == '05D':
+    elif row == "05D":
         Age_2.append(5)
 
-    elif row == '06D':
+    elif row == "06D":
         Age_2.append(6)
 
-    elif row == '07D':
+    elif row == "07D":
         Age_2.append(7)
 
-    elif row == '08D':
+    elif row == "08D":
         Age_2.append(8)
 
-    elif row == '09D':
+    elif row == "09D":
         Age_2.append(9)
 
-    elif row == '10D':
+    elif row == "10D":
         Age_2.append(10)
 
-    elif row == '11D':
+    elif row == "11D":
         Age_2.append(11)
 
-    elif row == '12D':
+    elif row == "12D":
         Age_2.append(12)
 
-    elif row == '13D':
+    elif row == "13D":
         Age_2.append(13)
 
-    elif row == '14D':
+    elif row == "14D":
         Age_2.append(14)
 
-    elif row == '15D':
+    elif row == "15D":
         Age_2.append(15)
 
     else:
@@ -1002,31 +1070,31 @@ for row in df_new['Cat3']:
 
 print(Age_2)
 
-df_new['Age'] = Age_2
+df_new["Age"] = Age_2
 
 # drop the column with Chronological Age and keep the age structure
-df_new = df_new.drop(['Cat3'], axis = 1) 
+df_new = df_new.drop(["Cat3"], axis=1)
 df_new.head(5)
 
 # %%
 
-# predicting new dataset with a model trained PCA transformed data 
+# predicting new dataset with a model trained PCA transformed data
 # define matrix of features and vector of labels
 
-X_valid = df_new.iloc[:,:-1]
+X_valid = df_new.iloc[:, :-1]
 y_valid = df_new["Age"]
 
-print('shape of X_valid : {}'.format(X_valid.shape))
-print('shape of y_valid : {}'.format(y_valid.shape))
+print("shape of X_valid : {}".format(X_valid.shape))
+print("shape of y_valid : {}".format(y_valid.shape))
 
 y_valid = np.asarray(y_valid)
 print(np.unique(y_valid))
 
-# tranform matrix of features with PCA 
+# tranform matrix of features with PCA
 
-X_valid_new = scaler.transform(X = X_valid)
+X_valid_new = scaler.transform(X=X_valid)
 age_valid = pca_pipe.fit_transform(X_valid_new)
-print('First five observation : {}'.format(age_valid[:5]))
+print("First five observation : {}".format(age_valid[:5]))
 
 
 # transform X and y matrices as arrays
@@ -1037,7 +1105,7 @@ age_valid = age_valid.reshape([age_valid.shape[0], -1])
 print(age_valid.shape)
 
 
-#%%
+# %%
 # change labels
 
 y_age_group_val = np.where((y_valid <= 9), 0, 0)
@@ -1049,39 +1117,55 @@ age_group_classes_val = ["1-9", "10-16"]
 
 labels_default_val, classes_default_val = [age_group_val], [age_group_classes_val]
 
-#%%
+# %%
 
-# load model trained with PCA transformed data from the disk 
+# load model trained with PCA transformed data from the disk
 
-reconstracted_model = tf.keras.models.load_model("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\lCNN_0_3_Model.h5")
+reconstracted_model = tf.keras.models.load_model(
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\lCNN_0_3_Model.h5"
+)
 
 # change the dimension of y_test to array
 y_validation = np.asarray(labels_default_val)
-y_validation = np.squeeze(y_validation) # remove any single dimension entries from the arrays
+y_validation = np.squeeze(
+    y_validation
+)  # remove any single dimension entries from the arrays
 
 # generates output predictions based on the X_input passed
 
 predictions = reconstracted_model.predict(age_valid)
 
-# computes the loss based on the X_input you passed, along with any other metrics requested in the metrics param 
+# computes the loss based on the X_input you passed, along with any other metrics requested in the metrics param
 # when model was compiled
 
-score = reconstracted_model.evaluate(age_valid, y_validation, verbose = 1)
-print('Test loss:', score[0])
-print('Test accuracy:', score[1])
+score = reconstracted_model.evaluate(age_valid, y_validation, verbose=1)
+print("Test loss:", score[0])
+print("Test accuracy:", score[1])
 
-# Calculating precision, recall and f-1 scores metrics for the predicted samples 
+# Calculating precision, recall and f-1 scores metrics for the predicted samples
 
-cr_pca = classification_report(np.argmax(y_validation, axis=-1), np.argmax(predictions, axis=-1))
+cr_pca = classification_report(
+    np.argmax(y_validation, axis=-1), np.argmax(predictions, axis=-1)
+)
 print(cr_pca)
 
-# save classification report to disk 
+# save classification report to disk
 cr = pd.read_fwf(io.StringIO(cr_pca), header=0)
 cr = cr.iloc[1:]
-cr.to_csv('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\classification_report.csv')
+cr.to_csv(
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_8comps_An_funestus_PCA_binary_sgd_6dens\classification_report.csv"
+)
 
-#%%
+# %%
 
-# Plot the confusion matrix for predcited samples 
-visualize(2, savedir, model_name, "Test_set", classes_default_val, outputs_default, predictions, y_validation)
-
+# Plot the confusion matrix for predcited samples
+visualize(
+    2,
+    savedir,
+    model_name,
+    "Test_set",
+    classes_default_val,
+    outputs_default,
+    predictions,
+    y_validation,
+)
