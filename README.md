@@ -2,7 +2,7 @@ Up to date files for testing:
 
 **Data folder contains**
 1. Train data (_An. funestus_)
-2. test data (_An. funestus_)
+2. Test data (_An. funestus_)
 
 **Code folder contains**
 1. standard_ml_fun_age_publication_fullwn.py : XGBoost classifier trained with all spectra features/wavenumbers
