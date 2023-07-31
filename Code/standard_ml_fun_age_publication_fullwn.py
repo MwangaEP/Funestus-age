@@ -87,9 +87,7 @@ plt.rcParams["figure.figsize"] = [6, 4]
 
 # Upload An. funestus train data for model training
 
-train_data = pd.read_csv(
-    "../Data/train_an_fun_df.csv"
-)
+train_data = pd.read_csv("../Data/train_an_fun_df.csv")
 
 print(train_data.head())
 
@@ -197,7 +195,7 @@ young = pd.DataFrame(young.iloc[:, :-1].mean().T).reset_index()
 # young = hum.reset_index()
 young.rename(columns={"index": "wavenumber", 0: "absorbance"}, inplace=True)
 young.to_csv(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\young_age_average.csv",
+    "../Data/young_age_average.csv",
     index=False,
 )
 
@@ -205,7 +203,7 @@ old = train_data.loc[train_data["Age_group"] == "10-16"]
 old = pd.DataFrame(old.iloc[:, :-1].mean().T).reset_index()
 old.rename(columns={"index": "wavenumber", 0: "absorbance"}, inplace=True)
 old.to_csv(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\old_age_average.csv",
+    "../Data/old_age_average.csv",
     index=False,
 )
 
@@ -266,7 +264,7 @@ for name, model in models:
     cv_results = cross_val_score(model, scaled_features, labels, cv=kf, scoring=scoring)
     results.append(cv_results)
     names.append(name)
-    msg = "Cross validation score for {0}: {1:.2%}".format(
+    msg = "Cross validation score for {0}: {1:.2%} ± {2:.2%}".format(
         name, cv_results.mean(), cv_results.std()
     )
     print(msg)
@@ -658,9 +656,7 @@ with open(
 # %%
 # start by loading the new test data
 
-df_new = pd.read_csv(
-    "../Data/test_an_fun_df.csv"
-)
+df_new = pd.read_csv("../Data/test_an_fun_df.csv")
 
 print(df_new.head())
 

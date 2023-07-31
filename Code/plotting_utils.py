@@ -3,7 +3,7 @@ import itertools
 from sklearn.metrics import confusion_matrix
 
 from matplotlib import pyplot
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 import seaborn as sns
 
 

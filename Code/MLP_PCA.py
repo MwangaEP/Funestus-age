@@ -95,9 +95,7 @@ plt.rcParams["figure.figsize"] = [6, 4]
 
 # Upload An. funestus train data for model training
 
-train_data = pd.read_csv(
-    "../Data/train_an_fun_df.csv"
-)
+train_data = pd.read_csv("../Data/train_an_fun_df.csv")
 
 print(train_data.head())
 
@@ -125,8 +123,6 @@ def build_folder(Fold, to_build=False):
     else:
         if to_build == True:
             raise NameError("Directory already exists, cannot be created!")
-
-
 
 
 # %%
@@ -809,9 +805,7 @@ graph_history_averaged(combn_dictionar_average)
 # %%
 # Loading dataset for prediction
 
-df_new = pd.read_csv(
-    "../Data/test_an_fun_df.csv"
-)
+df_new = pd.read_csv("../Data/test_an_fun_df.csv")
 
 print(df_new.head())
 

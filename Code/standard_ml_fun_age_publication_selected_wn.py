@@ -85,9 +85,7 @@ plt.rcParams["figure.figsize"] = [6, 4]
 
 # Upload An. funestus train data for model training
 
-train_data = pd.read_csv(
-    "../Data/train_an_fun_df.csv"
-)
+train_data = pd.read_csv("../Data/train_an_fun_df.csv")
 print(train_data.head())
 
 print(train_data.shape)
@@ -499,9 +497,7 @@ with open(
 # %%
 # start by loading the new test data
 
-df_new = pd.read_csv(
-    "../Data/test_an_fun_df.csv"
-)
+df_new = pd.read_csv("../Data/test_an_fun_df.csv")
 
 print(df_new.head())
 
