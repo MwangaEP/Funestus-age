@@ -835,7 +835,7 @@ graph_history_averaged(combn_dictionar_average)
 # Loading dataset for prediction/test data
 
 df_new = pd.read_csv(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\set_to_test_an_fun_new.csv"
+    "../Data/test_an_fun_df.csv"
 )
 print(df_new.head())
 
