@@ -55,7 +55,7 @@ from sklearn.feature_selection import (
     mutual_info_classif,
 )
 
-from plotting_utils import visualize
+from plotting_utils import visualizeDL
 
 from sklearn import decomposition
 from sklearn.manifold import MDS
@@ -767,7 +767,7 @@ for train_index, test_index in kf.split(features):
 
     # Plotting confusion matrix for each fold/iteration
 
-    visualize(
+    visualizeDL(
         histories,
         savedir,
         model_name,
@@ -797,7 +797,7 @@ print("save.true shape", save_true.shape)
 
 # Plotting an averaged confusion matrix
 
-visualize(
+visualizeDL(
     1,
     savedir,
     model_name,
@@ -991,7 +991,7 @@ cr.to_csv(
 # %%
 
 # Plot the confusion matrix for predicted samples
-visualize(
+visualizeDL(
     2,
     savedir,
     model_name,

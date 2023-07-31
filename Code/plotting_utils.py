@@ -15,6 +15,7 @@ def plot_confusion_matrix(
     cm,
     classes,
     normalize=True,
+    save_path,
     title="Confusion matrix",
     xrotation=0,
     yrotation=0,
@@ -63,8 +64,9 @@ def plot_confusion_matrix(
     # plt.show()
     plt.savefig(
         (
-            "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\Confusion_Matrix_"
-            + figure_name
+            save_path
+            + "Confusion_Matrix_"
+            + figure_name 
             + "_"
             + ".png"
         ),
@@ -77,11 +79,20 @@ def plot_confusion_matrix(
 # for visualizing confusion matrix once the model is trained
 
 
-def visualize(figure_name, classes, predicted, true):
+def visualizeML(
+    
+    figure_name, 
+    save_path, 
+    classes, 
+    predicted, 
+    true
+    ):
+
     # Sort out predictions and true labels
     # for label_predictions_arr, label_true_arr, classes, outputs in zip(predicted, true, classes, outputs):
     #     print('visualize predicted classes', predicted)
     #     print('visualize true classes', true)
+    
     classes_pred = np.asarray(predicted)
     classes_true = np.asarray(true)
     print(classes_pred.shape)
@@ -89,3 +100,27 @@ def visualize(figure_name, classes, predicted, true):
     classes = ["1-9", "10-16"]
     cnf_matrix = confusion_matrix(classes_true, classes_pred, labels=classes)
     plot_confusion_matrix(cnf_matrix, classes)
+
+def visualizeDL(
+
+    histories, 
+    save_path, 
+    model_name, 
+    fold, 
+    classes, 
+    outputs, 
+    predicted, 
+    true
+
+    ):
+    # Sort out predictions and true labels
+    # for label_predictions_arr, label_true_arr, classes, outputs in zip(predicted, true, classes, outputs):
+    # print('visualize predicted classes', predicted)
+    # print('visualize true classes', true)
+
+    classes_pred = np.argmax(predicted, axis=-1)
+    classes_true = np.argmax(true, axis=-1)
+    print(classes_pred.shape)
+    print(classes_true.shape)
+    cnf_matrix = confusion_matrix(classes_true, classes_pred)
+    plot_confusion_matrix(cnf_matrix, classes, outputs, save_path, model_name, fold)

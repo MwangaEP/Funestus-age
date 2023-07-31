@@ -47,7 +47,7 @@ from sklearn.metrics import (
     precision_recall_fscore_support,
 )
 
-from plotting_utils import visualize
+from plotting_utils import visualizeML
 
 from imblearn.under_sampling import RandomUnderSampler
 
@@ -380,10 +380,10 @@ print("Time elapsed: {0:.2f} minutes ({1:.1f} sec)".format(elapsed / 60, elapsed
 # %%
 
 # plot averaged confusionfor the validation set
-
+outdir = "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-selected wavenumbers" 
 figure_name = "validation-02%"
 classes = np.unique(np.sort(y))
-visualize(figure_name, classes, save_predicted, save_true)
+visualizeML(figure_name,outdir, classes, save_predicted, save_true)
 
 # %%
 
@@ -415,23 +415,23 @@ visualize(figure_name, classes, save_predicted, save_true)
 # Results
 
 kf_results.to_csv(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\crf_kfCV_record.csv",
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-selected wavenumbers\crf_kfCV_record.csv",
     index=False,
 )
 kf_results = pd.read_csv(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\crf_kfCV_record.csv"
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-selected wavenumbers\crf_kfCV_record.csv"
 )
 
 # Accuracy distribution
 crf_acc_distrib = kf_results["Accuracy"]
 crf_acc_distrib.columns = ["Accuracy"]
 crf_acc_distrib.to_csv(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\crf_acc_distrib.csv",
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-selected wavenumbers\crf_acc_distrib.csv",
     header=True,
     index=False,
 )
 crf_acc_distrib = pd.read_csv(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\crf_acc_distrib.csv"
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-selected wavenumbers\crf_acc_distrib.csv"
 )
 crf_acc_distrib = np.round(crf_acc_distrib, 2)
 print(crf_acc_distrib)
@@ -442,16 +442,16 @@ print(crf_acc_distrib)
 classes = ["1-9", "10-16"]
 rf_per_class_acc_distrib = pd.DataFrame(kf_per_class_results, columns=classes)
 rf_per_class_acc_distrib.dropna().to_csv(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\_rf_per_class_acc_distrib.csv"
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-selected wavenumbers\_rf_per_class_acc_distrib.csv"
 )
 rf_per_class_acc_distrib = pd.read_csv(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\_rf_per_class_acc_distrib.csv",
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-selected wavenumbers\_rf_per_class_acc_distrib.csv",
     index_col=0,
 )
 rf_per_class_acc_distrib = np.round(rf_per_class_acc_distrib, 1)
 rf_per_class_acc_distrib_describe = rf_per_class_acc_distrib.describe()
 rf_per_class_acc_distrib_describe.to_csv(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\_rf_per_class_acc_distrib.csv"
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-selected wavenumbers\_rf_per_class_acc_distrib.csv"
 )
 
 # %%
@@ -481,7 +481,7 @@ plt.grid(False)
 plt.tight_layout()
 # plt.show()
 plt.savefig(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\_rf_per_class_acc_distrib.png",
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-selected wavenumbers\_rf_per_class_acc_distrib.png",
     dpi=500,
     bbox_inches="tight",
 )
@@ -491,7 +491,7 @@ plt.savefig(
 # save the trained model to disk for future use
 
 with open(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\classifier.pkl", "wb"
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-selected wavenumbers\classifier.pkl", "wb"
 ) as fid:
     pickle.dump(classifier, fid)
 
@@ -652,6 +652,6 @@ cr.to_csv(
 # plot the confusion matrix for the test data (glasgow data)
 figure_name = "test_02"
 classes = np.unique(np.sort(y_valid))
-visualize(figure_name, classes, predictions, y_valid)
+visualizeML(figure_name, outdir, classes, predictions, y_valid)
 
 # %%
