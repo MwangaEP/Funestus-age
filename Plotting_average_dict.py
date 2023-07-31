@@ -108,7 +108,7 @@ def set_plot_history_data(ax, history, which_graph):
 
     epochs = range(1, len(train) + 1)
         
-    trim = 20 # remove first 20 epochs
+    trim = 5 # remove first n epochs
     # when graphing loss the first few epochs may skew the (loss) graph
     
     ax.plot(epochs[trim:], train[trim:], 'b', label = ('accuracy'))
@@ -139,15 +139,16 @@ def graph_history_averaged(combined_history):
     ax1.xaxis.set_ticks_position('bottom')
     ax1.spines['bottom'].set_visible(True)
 
-    plt.yticks(np.arange(0.3, 1.0 + 0.1, step = 0.1))
+    plt.yticks(np.arange(0.2, 1.0 + 0.1, step = 0.2))
+    plt.xticks(range(0, len(combined_history['accuracy']) + 500, 2000))
     plt.tight_layout()
     plt.grid(False)
-    plt.savefig("C:\Mannu\QMBCE\Thesis\Fold\_allcomps_std_k_fold_publish_01\Averaged_graph_2.png", dpi = 500, bbox_inches="tight")
+    plt.savefig("C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_selected_wns\Averaged_graph_2.png", dpi = 500, bbox_inches="tight")
     plt.close()
 
 #%%
 
-with open('C:\Mannu\QMBCE\Thesis\Fold\_allcomps_std_k_fold_publish_01\combined_history_dictionaries.txt') as json_file:
+with open('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_selected_wns\combined_history_dictionaries.txt') as json_file:
     combined_dictionary = json.load(json_file)
 
 #%%
