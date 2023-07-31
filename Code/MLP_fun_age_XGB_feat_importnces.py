@@ -504,7 +504,7 @@ seed = 42
 # load important wavenumbers stored in the disk
 
 with open(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\important_wavenumbers.txt"
+    "../Data/important_wavenumbers.txt"
 ) as json_file:
     important_wavenumb = json.load(json_file)
 

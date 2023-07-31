@@ -206,7 +206,7 @@ print("shape of X : {}".format(X.shape))
 print("shape of y : {}".format(y.shape))
 
 with open(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-fullwn\important_wavenumbers.txt"
+    "../Data/important_wavenumbers.txt"
 ) as json_file:
     important_wavenumb = json.load(json_file)
 
@@ -405,7 +405,6 @@ visualizeML(figure_name,outdir, classes, save_predicted, save_true)
 # plt.ylabel('Classification Error rate', weight = 'bold')
 # # plt.title('XGBoost learning curve', weight = 'bold')
 # plt.savefig(('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\XGB_learning_curve.png'), dpi = 500, bbox_inches = 'tight')
-# plt.show()
 
 
 # %%
@@ -477,7 +476,6 @@ plt.xlabel(" ")
 plt.ylabel("Prediction accuracy", weight="bold")
 plt.grid(False)
 plt.tight_layout()
-# plt.show()
 plt.savefig(
     "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-selected wavenumbers\_rf_per_class_acc_distrib.png",
     dpi=500,

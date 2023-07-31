@@ -188,7 +188,8 @@ train_data = train_data.drop(["Age"], axis=1)
 train_data.head(5)
 
 # %%
-# calculate the mean of each class to plot the average spectra
+# calculate the mean of each class to plot the average spectra, save the average spectra to disk,
+# to be used later
 
 young = train_data.loc[train_data["Age_group"] == "1-9"]
 young = pd.DataFrame(young.iloc[:, :-1].mean().T).reset_index()
@@ -302,7 +303,6 @@ plt.yticks(np.arange(0.2, 1.0 + 0.1, step=0.2))
 plt.ylabel("Accuracy", weight="bold")
 plt.xlabel(" ")
 plt.tight_layout()
-# plt.show()
 plt.savefig(
     "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-fullwn\_algorithm_sel_",
     dpi=500,
@@ -497,7 +497,7 @@ visualizeML(figure_name, classes, save_predicted, save_true)
 # plt.ylabel('Classification Error rate', weight = 'bold')
 # # plt.title('XGBoost learning curve', weight = 'bold')
 # plt.savefig(('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-fullwn\XGB_learning_curve.png'), dpi = 500, bbox_inches = 'tight')
-# plt.show()
+
 
 
 # %%
@@ -638,7 +638,6 @@ plt.xlabel(" ")
 plt.ylabel("Prediction accuracy", weight="bold")
 plt.grid(False)
 plt.tight_layout()
-# plt.show()
 plt.savefig(
     "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-fullwn\_rf_per_class_acc_distrib.png",
     dpi=500,
