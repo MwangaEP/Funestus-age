@@ -82,7 +82,7 @@ import seaborn as sns
 
 sns.set(
     context="paper",
-    style="whitegrid",
+    style="white",
     palette="deep",
     font_scale=2.0,
     color_codes=True,
@@ -156,32 +156,32 @@ def graph_history(history, model_name, model_ver_num, fold, save_path):
         plt.grid(False)
         plt.xlabel("epoch", weight="bold")
         plt.ylabel(i)
-        plt.savefig(
-            save_path
-            + model_name
-            + "_"
-            + str(model_ver_num)
-            + "_"
-            + str(fold)
-            + "_"
-            + i
-            + ".png",
-            dpi=500,
-            bbox_inches="tight",
-        )
-        plt.savefig(
-            save_path
-            + model_name
-            + "_"
-            + str(model_ver_num)
-            + "_"
-            + str(fold)
-            + "_"
-            + i
-            + ".pdf",
-            dpi=500,
-            bbox_inches="tight",
-        )
+        # plt.savefig(
+        #     save_path
+        #     + model_name
+        #     + "_"
+        #     + str(model_ver_num)
+        #     + "_"
+        #     + str(fold)
+        #     + "_"
+        #     + i
+        #     + ".png",
+        #     dpi=500,
+        #     bbox_inches="tight",
+        # )
+        # plt.savefig(
+        #     save_path
+        #     + model_name
+        #     + "_"
+        #     + str(model_ver_num)
+        #     + "_"
+        #     + str(fold)
+        #     + "_"
+        #     + i
+        #     + ".pdf",
+        #     dpi=500,
+        #     bbox_inches="tight",
+        # )
         plt.close()
 
 
@@ -242,7 +242,7 @@ def graph_history_averaged(combined_history):
     plt.tight_layout()
     plt.grid(False)
     plt.savefig(
-        "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder\Averaged_graph.png",
+        "../Results/MLP_pca\Training_Folder\Averaged_graph.png",
         dpi=500,
         bbox_inches="tight",
     )
@@ -593,7 +593,7 @@ def train_models(model_to_test, save_path):
 # Organize outputs and call visualization for plotting and graphing.
 
 
-outdir = "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold"
+outdir = "../Results/MLP_pca"
 build_folder(outdir, False)
 
 
@@ -649,9 +649,9 @@ train_model = True
 
 # Name a folder for the outputs to go into
 
-savedir = outdir + "\Training_Folder_PCA"
+savedir = outdir + "\Training_Folder"
 build_folder(savedir, True)
-savedir = outdir + "\Training_Folder_PCA\l"
+savedir = outdir + "\Training_Folder\l"
 
 # start model training on standardized data
 
@@ -659,11 +659,6 @@ start_time = time()
 save_predicted = []
 save_true = []
 
-
-num_rounds = 2
-
-# for round in range(num_rounds):
-#     SEED = SEED = np.random.randint(0, 81470)
 
 for train_index, test_index in kf.split(features):
     # Split data into test and train
@@ -743,7 +738,7 @@ for train_index, test_index in kf.split(features):
         savedir,
         model_name,
         str(fold),
-        classes_default,
+        classes_default[0],
         outputs_default,
         y_predicted,
         y_test,
@@ -773,7 +768,7 @@ visualizeDL(
     savedir,
     model_name,
     "Averaged",
-    classes_default,
+    classes_default[0],
     outputs_default,
     save_predicted,
     save_true,
@@ -790,7 +785,7 @@ print("Run time : {} h".format((end_time - start_time) / 3600))
 
 combn_dictionar = combine_dictionaries(averaged_histories)
 with open(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder\combined_history_dictionaries.txt",
+    "../Results/MLP_pca/Training_Folder/combined_history_dictionaries.txt",
     "w",
 ) as outfile:
     json.dump(combn_dictionar, outfile)
@@ -919,7 +914,7 @@ labels_default_val, classes_default_val = [age_group_val], [age_group_classes_va
 # load model trained
 
 loaded_model = load_model(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_PCA\lCNN_0_3_Model.h5"
+    "../Results/MLP_pca/Training_Folder/lCNN_0_3_Model.h5"
 )
 
 # change the dimension of y_test to array
@@ -950,7 +945,7 @@ print(cr_pca)
 cr = pd.read_fwf(io.StringIO(cr_pca), header=0)
 cr = cr.iloc[0:]
 cr.to_csv(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_PCA\classification_report.csv"
+    "../Results/MLP_pca/Training_Folder/classification_report.csv"
 )
 
 # %%
@@ -961,8 +956,10 @@ visualizeDL(
     savedir,
     model_name,
     "Test_set",
-    classes_default_val,
+    classes_default_val[0],
     outputs_default,
     predictions,
     y_validation,
 )
+
+# %%

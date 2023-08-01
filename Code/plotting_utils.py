@@ -10,74 +10,67 @@ import seaborn as sns
 # This normalizes the confusion matrix and ensures neat plotting for all outputs.
 # Function for plotting confusion matrices
 
-
 def plot_confusion_matrix(
-    cm,
-    classes,
+
+    cm, 
+    classes, 
+    output, 
+    save_path, 
+    model_name, 
+    fold,
     normalize=True,
-    save_path,
-    title="Confusion matrix",
+    title='Confusion matrix',
     xrotation=0,
     yrotation=0,
     cmap=plt.cm.Purples,
-    printout=False,
-):
+    printout=False
+    
+    ):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
     """
     if normalize:
-        cm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         if printout:
             print("Normalized confusion matrix")
     else:
         if printout:
-            print("Confusion matrix")
+            print('Confusion matrix')
 
     if printout:
         print(cm)
+    
+    plt.figure(figsize=(6,4))
 
-    plt.figure(figsize=(6, 4))
-
-    plt.imshow(cm, interpolation="nearest", vmin=0.2, vmax=1.0, cmap=cmap)
-    # plt.title(title)
+    plt.imshow(
+        cm, 
+        interpolation='nearest', 
+        vmin = 0.2, 
+        vmax = 1.0, 
+        cmap = cmap
+        )
+    # plt.title([title +' - '+ model_name])
     plt.colorbar()
     classes = classes
     tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=xrotation)
-    plt.yticks(tick_marks, classes, rotation=yrotation)
+    plt.xticks(tick_marks, classes, rotation = xrotation)
+    plt.yticks(tick_marks, classes, rotation = yrotation)
 
-    fmt = ".2f" if normalize else "d"
-    thresh = cm.max() / 2.0
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         plt.text(
-            j,
-            i,
+            j, 
+            i, 
             format(cm[i, j], fmt),
-            horizontalalignment="center",
-            color="white" if cm[i, j] > thresh else "black",
-        )
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
 
     plt.tight_layout()
-    plt.ylabel("True label", weight="bold")
-    plt.xlabel("Predicted label", weight="bold")
-    # plt.show()
-    plt.savefig(
-        (
-            save_path
-            + "Confusion_Matrix_"
-            + figure_name 
-            + "_"
-            + ".png"
-        ),
-        dpi=500,
-        bbox_inches="tight",
-    )
-
-
-# Visualizing outputs
-# for visualizing confusion matrix once the model is trained
-
+    plt.ylabel('True Age', weight = 'bold')
+    plt.xlabel('Predicted Age', weight = 'bold')
+    
 
 def visualizeML(
     
@@ -85,21 +78,36 @@ def visualizeML(
     save_path, 
     classes, 
     predicted, 
-    true
+    true, 
+    model_name,
+    fold
+
     ):
 
     # Sort out predictions and true labels
     # for label_predictions_arr, label_true_arr, classes, outputs in zip(predicted, true, classes, outputs):
     #     print('visualize predicted classes', predicted)
     #     print('visualize true classes', true)
-    
+
     classes_pred = np.asarray(predicted)
     classes_true = np.asarray(true)
+    classes = classes
     print(classes_pred.shape)
     print(classes_true.shape)
-    classes = ["1-9", "10-16"]
     cnf_matrix = confusion_matrix(classes_true, classes_pred, labels=classes)
-    plot_confusion_matrix(cnf_matrix, classes)
+    plot_confusion_matrix(cnf_matrix, classes, save_path, figure_name, model_name, fold)
+    plt.savefig(
+        (
+            save_path 
+            + "Confusion_Matrix_" 
+            + figure_name 
+            + "_"
+            + ".png"
+        ),
+        dpi = 500, 
+        bbox_inches="tight"
+    )
+    
 
 def visualizeDL(
 
@@ -113,14 +121,29 @@ def visualizeDL(
     true
 
     ):
+
     # Sort out predictions and true labels
     # for label_predictions_arr, label_true_arr, classes, outputs in zip(predicted, true, classes, outputs):
     # print('visualize predicted classes', predicted)
     # print('visualize true classes', true)
 
-    classes_pred = np.argmax(predicted, axis=-1)
-    classes_true = np.argmax(true, axis=-1)
+    classes_pred = np.argmax(predicted, axis = -1)
+    classes_true = np.argmax(true, axis = -1)
     print(classes_pred.shape)
     print(classes_true.shape)
     cnf_matrix = confusion_matrix(classes_true, classes_pred)
     plot_confusion_matrix(cnf_matrix, classes, outputs, save_path, model_name, fold)
+    plt.savefig(
+        (
+            save_path 
+            + "Confusion_Matrix_" 
+            + model_name 
+            + "_" 
+            + fold 
+            + "_"
+            + ".png"
+        ),
+        dpi = 500, 
+        bbox_inches="tight"
+    )
+    
