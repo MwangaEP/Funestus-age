@@ -3,6 +3,7 @@
 # %%
 
 import os
+import os.path
 import io
 import ast
 import itertools
@@ -95,7 +96,8 @@ plt.rcParams["figure.figsize"] = [6, 4]
 
 # Upload An. funestus train data for model training
 
-train_data = pd.read_csv("../Data/train_an_fun_df.csv")
+file_path = os.path.join("..", "Data", "train_an_fun_df.csv")
+train_data = pd.read_csv(file_path)
 
 print(train_data.head())
 
@@ -114,15 +116,15 @@ train_data.head(10)
 # create a new folder for the CNN outputs
 
 
-def build_folder(Fold, to_build=False):
-    if not os.path.isdir(Fold):
-        if to_build == True:
-            os.mkdir(Fold)
-        else:
-            print("Directory does not exists, not creating directory!")
-    else:
-        if to_build == True:
-            raise NameError("Directory already exists, cannot be created!")
+# def build_folder(Fold, to_build=False):
+#     if not os.path.isdir(Fold):
+#         if to_build == True:
+#             os.mkdir(Fold)
+#         else:
+#             print("Directory does not exist, not creating directory!")
+#     else:
+#         if to_build == True:
+#             raise NameError("Directory already exists, cannot be created!")
 
 
 # %%
@@ -166,19 +168,6 @@ def graph_history(history, model_name, model_ver_num, fold, save_path):
         #     + "_"
         #     + i
         #     + ".png",
-        #     dpi=500,
-        #     bbox_inches="tight",
-        # )
-        # plt.savefig(
-        #     save_path
-        #     + model_name
-        #     + "_"
-        #     + str(model_ver_num)
-        #     + "_"
-        #     + str(fold)
-        #     + "_"
-        #     + i
-        #     + ".pdf",
         #     dpi=500,
         #     bbox_inches="tight",
         # )
@@ -241,11 +230,11 @@ def graph_history_averaged(combined_history):
 
     plt.tight_layout()
     plt.grid(False)
-    plt.savefig(
-        "../Results/MLP_pca\Training_Folder\Averaged_graph.png",
-        dpi=500,
-        bbox_inches="tight",
-    )
+    save_dir = os.path.join("..", "Results", "MLP_pca", "Training_Folder")
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    filename = os.path.join(save_dir, "Averaged_graph.png")
+    plt.savefig(filename, dpi=500, bbox_inches="tight")
     plt.close()
 
 
@@ -528,7 +517,7 @@ labels_default, classes_default, outputs_default = (
 # Function to train the model
 
 # This function will split the data into training and validation, and call the create models function.
-# This fucntion returns the model and training history.
+# This function returns the model and training history.
 
 
 def train_models(model_to_test, save_path):
@@ -557,7 +546,7 @@ def train_models(model_to_test, save_path):
         validation_data=(X_val, y_val),
         callbacks=[
             tf.keras.callbacks.EarlyStopping(
-                monitor="val_loss", patience=400, verbose=1, mode="auto"
+                monitor="val_loss", patience=100, verbose=1, mode="auto"
             ),
             CSVLogger(
                 save_path + model_name + "_" + str(model_ver_num) + ".csv",
@@ -593,12 +582,12 @@ def train_models(model_to_test, save_path):
 # Organize outputs and call visualization for plotting and graphing.
 
 
-outdir = "../Results/MLP_pca"
-build_folder(outdir, False)
+outdir = os.path.join("..", "Results", "MLP_pca")
+# build_folder(outdir, False)
 
 
 # set model parameters
-# model size when data dimension is reduced to 8 principle componets
+# model size when data dimension is reduced to 8 principle components
 
 # Options
 # Convolutional Layer:
@@ -649,9 +638,10 @@ train_model = True
 
 # Name a folder for the outputs to go into
 
-savedir = outdir + "\Training_Folder"
-build_folder(savedir, True)
-savedir = outdir + "\Training_Folder\l"
+save_dir = os.path.join(outdir, "Training_Folder")
+if not os.path.exists(save_dir):
+    os.makedirs(save_dir)
+savedir = os.path.join(save_dir, "l")
 
 # start model training on standardized data
 
@@ -785,7 +775,13 @@ print("Run time : {} h".format((end_time - start_time) / 3600))
 
 combn_dictionar = combine_dictionaries(averaged_histories)
 with open(
-    "../Results/MLP_pca/Training_Folder/combined_history_dictionaries.txt",
+    os.path.join(
+        "..",
+        "Results",
+        "MLP_pca",
+        "Training_Folder",
+        "combined_history_dictionaries.txt",
+    ),
     "w",
 ) as outfile:
     json.dump(combn_dictionar, outfile)
@@ -800,7 +796,7 @@ graph_history_averaged(combn_dictionar_average)
 # %%
 # Loading dataset for prediction
 
-df_new = pd.read_csv("../Data/test_an_fun_df.csv")
+df_new = pd.read_csv(os.path.join("..", "Data", "test_an_fun_df.csv"))
 
 print(df_new.head())
 
@@ -812,7 +808,6 @@ df_new = df_new.drop(["Unnamed: 0"], axis=1)
 df_new.head(10)
 
 # %%
-
 # Rename age from strings to numbers
 Age_2 = []
 
@@ -913,9 +908,10 @@ labels_default_val, classes_default_val = [age_group_val], [age_group_classes_va
 
 # load model trained
 
-loaded_model = load_model(
-    "../Results/MLP_pca/Training_Folder/lCNN_0_3_Model.h5"
+file_path = os.path.join(
+    "..", "Results", "MLP_pca", "Training_Folder", "lCNN_0_3_Model.h5"
 )
+loaded_model = load_model(file_path)
 
 # change the dimension of y_test to array
 y_validation = np.asarray(labels_default_val)
@@ -945,12 +941,14 @@ print(cr_pca)
 cr = pd.read_fwf(io.StringIO(cr_pca), header=0)
 cr = cr.iloc[0:]
 cr.to_csv(
-    "../Results/MLP_pca/Training_Folder/classification_report.csv"
+    os.path.join(
+        "..", "Results", "MLP_pca", "Training_Folder", "classification_report.csv"
+    )
 )
 
 # %%
 
-# Plot the confusion matrix for predcited samples
+# Plot the confusion matrix for predicted samples
 visualizeDL(
     2,
     savedir,
