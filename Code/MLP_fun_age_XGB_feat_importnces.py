@@ -5,6 +5,7 @@
 # %%
 
 import os
+import os.path
 import io
 import ast
 import itertools
@@ -249,8 +250,8 @@ def graph_history_averaged(combined_history):
     plt.grid(False)
     plt.savefig(
         "../Results/MLP_selectedwn/Training_Folder/Averaged_graph.png",
-        dpi = 500,
-        bbox_inches = "tight",
+        dpi=500,
+        bbox_inches="tight",
     )
     plt.close()
 
@@ -503,9 +504,7 @@ seed = 42
 
 # load important wavenumbers stored in the disk
 
-with open(
-    "../Data/important_wavenumbers.txt"
-) as json_file:
+with open("../Data/important_wavenumbers.txt") as json_file:
     important_wavenumb = json.load(json_file)
 
 # Select the important wavenumbers from the main dataframe
@@ -585,7 +584,7 @@ def train_models(model_to_test, save_path):
         validation_data=(X_val, y_val),
         callbacks=[
             tf.keras.callbacks.EarlyStopping(
-                monitor="val_loss", patience=400, verbose=1, mode="auto"
+                monitor="val_loss", patience=100, verbose=1, mode="auto"
             ),
             CSVLogger(
                 save_path + model_name + "_" + str(model_ver_num) + ".csv",
@@ -676,9 +675,9 @@ train_model = True
 
 # Name a folder for the outputs to go into
 
-savedir = outdir + "\Training_Folder"
+savedir = outdir + "/Training_Folder"
 build_folder(savedir, True)
-savedir = outdir + "\Training_Folder\l"
+savedir = outdir + "/Training_Folder/l"
 
 # start model training on standardized data
 
@@ -942,9 +941,7 @@ labels_default_val, classes_default_val = [age_group_val], [age_group_classes_va
 
 # load trained model
 
-loaded_model = load_model(
-    "../Results/MLP_selectedwn/Training_Folder/lCNN_0_3_Model.h5"
-)
+loaded_model = load_model("../Results/MLP_selectedwn/Training_Folder/lCNN_0_3_Model.h5")
 
 # change the dimension of y_test to array
 y_validation = np.asarray(labels_default_val)
@@ -973,9 +970,7 @@ print(cr_1)
 # save classification report to disk
 cr = pd.read_fwf(io.StringIO(cr_1), header=0)
 cr = cr.iloc[0:]
-cr.to_csv(
-    "../Results/MLP_selectedwn/Training_Folder/classification_report.csv"
-)
+cr.to_csv("../Results/MLP_selectedwn/Training_Folder/classification_report.csv")
 
 # %%
 
