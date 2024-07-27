@@ -27,33 +27,33 @@ from random import randint
 from collections import Counter
 
 from sklearn.model_selection import (
-    ShuffleSplit,
-    train_test_split,
-    StratifiedKFold,
-    StratifiedShuffleSplit,
-    KFold,
-)
-from sklearn.preprocessing import StandardScaler, Normalizer, MinMaxScaler
+                                    ShuffleSplit,
+                                    train_test_split,
+                                    StratifiedKFold,
+                                    StratifiedShuffleSplit,
+                                    KFold,
+                                )
+from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import (
-    MultiLabelBinarizer,
-    FunctionTransformer,
-    LabelBinarizer,
-)
+                                    MultiLabelBinarizer,
+                                    FunctionTransformer,
+                                    LabelBinarizer,
+                                )
 from sklearn.metrics import (
-    confusion_matrix,
-    classification_report,
-    f1_score,
-    recall_score,
-    precision_score,
-)
+                            confusion_matrix,
+                            classification_report,
+                            f1_score,
+                            recall_score,
+                            precision_score,
+                        )
 
 from sklearn.feature_selection import (
-    SelectKBest,
-    SelectPercentile,
-    f_classif,
-    chi2,
-    mutual_info_classif,
-)
+                                    SelectKBest,
+                                    SelectPercentile,
+                                    f_classif,
+                                    chi2,
+                                    mutual_info_classif,
+                                )
 
 from plotting_utils import visualizeDL
 
@@ -84,13 +84,13 @@ import matplotlib.pyplot as plt  # for making plots
 import seaborn as sns
 
 sns.set(
-    context="paper",
-    style="white",
-    palette="deep",
-    font_scale=2.0,
-    color_codes=True,
-    rc=None,
-)
+        context = "paper",
+        style = "white",
+        palette = "deep",
+        font_scale = 2.0,
+        color_codes = True,
+        rc = None,
+    )
 # %matplotlib inline
 plt.rcParams["figure.figsize"] = [6, 4]
 
@@ -226,11 +226,11 @@ def set_plot_history_data(ax, history, which_graph):
 def graph_history_averaged(combined_history):
     print("averaged_histories.keys : {}".format(combined_history.keys()))
     fig, (ax1) = plt.subplots(
-        nrows=1,
-        ncols=1,
-        figsize=(6, 4),
-        sharex=True,
-    )
+                            nrows=1,
+                            ncols=1,
+                            figsize=(6, 4),
+                            sharex=True,
+                        )
 
     set_plot_history_data(ax1, combined_history, "accuracy")
 
@@ -248,10 +248,10 @@ def graph_history_averaged(combined_history):
     plt.tight_layout()
     plt.grid(False)
     plt.savefig(
-        "../Results/MLP_selectedwn/Training_Folder/Averaged_graph.png",
-        dpi = 500,
-        bbox_inches = "tight",
-    )
+                "../Results/MLP_selectedwn/Training_Folder/Averaged_graph.png",
+                dpi = 500,
+                bbox_inches = "tight",
+            )
     plt.close()
 
 
@@ -309,7 +309,7 @@ def create_models(model_shape, input_layer_dim):
     regConst = 0.02
 
     # defining a stochastic gradient boosting optimizer
-    sgd = tf.keras.optimizers.SGD(lr=0.001, momentum=0.9, nesterov=True, clipnorm=1.0)
+    sgd = tf.keras.optimizers.SGD(lr = 0.001, momentum = 0.9, nesterov = True, clipnorm = 1.0)
 
     # define categorical_crossentrophy as the loss function (multi-class problem i.e. 3 age classes)
 
@@ -322,7 +322,7 @@ def create_models(model_shape, input_layer_dim):
     # (input_layer_dim, ) it will learn some combination of feautures with the learnable weights of the
     # network
 
-    input_vec = tf.keras.Input(name="input", shape=(input_layer_dim,))
+    input_vec = tf.keras.Input(name = "input", shape = (input_layer_dim,))
 
     for i, layerwidth in zip(range(len(model_shape)), model_shape):
         if i == 0:
@@ -331,91 +331,87 @@ def create_models(model_shape, input_layer_dim):
                 # signals with maxpooling1D and batch normalization:
 
                 xd = tf.keras.layers.Conv1D(
-                    name=("Conv" + str(i + 1)),
-                    filters=model_shape[i]["filter"],
-                    kernel_size=model_shape[i]["kernel"],
-                    strides=model_shape[i]["stride"],
-                    activation="relu",
-                    kernel_regularizer=regularizers.l2(regConst),
-                    kernel_initializer="he_normal",
-                )(input_vec)
+                    name = ("Conv" + str(i + 1)),
+                    filters = model_shape[i]["filter"],
+                    kernel_size = model_shape[i]["kernel"],
+                    strides = model_shape[i]["stride"],
+                    activation = "relu",
+                    kernel_regularizer = regularizers.l2(regConst),
+                    kernel_initializer = "he_normal")(input_vec)
+                    
                 xd = tf.keras.layers.BatchNormalization(
-                    name=("batchnorm_" + str(i + 1))
-                )(xd)
+                    name = ("batchnorm_" + str(i + 1)))(xd)
                 xd = tf.keras.layers.MaxPooling1D(
-                    pool_size=(model_shape[i]["pooling"])
-                )(xd)
+                    pool_size = (model_shape[i]["pooling"]))(xd)
 
                 # A hidden layer
 
             elif model_shape[i]["type"] == "d":
                 xd = tf.keras.layers.Dense(
-                    name=("d" + str(i + 1)),
-                    units=model_shape[i]["width"],
-                    activation="relu",
-                    kernel_regularizer=regularizers.l2(regConst),
-                    kernel_initializer="he_normal",
-                )(input_vec)
+                    name = ("d" + str(i + 1)),
+                    units = model_shape[i]["width"],
+                    activation = "relu",
+                    kernel_regularizer = regularizers.l2(regConst),
+                    kernel_initializer = "he_normal")(input_vec)
+
                 xd = tf.keras.layers.BatchNormalization(
-                    name=("batchnorm_" + str(i + 1))
-                )(xd)
-                xd = tf.keras.layers.Dropout(name=("dout" + str(i + 1)), rate=0.5)(xd)
+                    name = ("batchnorm_" + str(i + 1)))(xd)
+                xd = tf.keras.layers.Dropout(name = ("dout" + str(i + 1)), rate = 0.5)(xd)
 
         else:
             if model_shape[i]["type"] == "c":
                 # convulational1D layer
 
                 xd = tf.keras.layers.Conv1D(
-                    name=("Conv" + str(i + 1)),
-                    filters=model_shape[i]["filter"],
-                    kernel_size=model_shape[i]["kernel"],
-                    strides=model_shape[i]["stride"],
-                    activation="relu",
-                    kernel_regularizer=regularizers.l2(regConst),
-                    kernel_initializer="he_normal",
-                )(xd)
+                    name = ("Conv" + str(i + 1)),
+                    filters = model_shape[i]["filter"],
+                    kernel_size = model_shape[i]["kernel"],
+                    strides = model_shape[i]["stride"],
+                    activation = "relu",
+                    kernel_regularizer = regularizers.l2(regConst),
+                    kernel_initializer = "he_normal")(xd)
                 xd = tf.keras.layers.BatchNormalization(
-                    name=("batchnorm_" + str(i + 1))
-                )(xd)
+                    name = ("batchnorm_" + str(i + 1)))(xd)
                 xd = tf.keras.layers.MaxPooling1D(
-                    pool_size=(model_shape[i]["pooling"])
-                )(xd)
+                    pool_size = (model_shape[i]["pooling"]))(xd)
 
             elif model_shape[i]["type"] == "d":
                 if model_shape[i - 1]["type"] == "c":
                     xd = tf.keras.layers.Flatten()(xd)
 
-                xd = tf.keras.layers.Dropout(name=("dout" + str(i + 1)), rate=0.5)(xd)
+                xd = tf.keras.layers.Dropout(name = ("dout" + str(i + 1)), rate = 0.5)(xd)
                 xd = tf.keras.layers.Dense(
-                    name=("d" + str(i + 1)),
-                    units=model_shape[i]["width"],
-                    activation="relu",
-                    kernel_regularizer=regularizers.l2(regConst),
-                    kernel_initializer="he_normal",
-                )(xd)
+                    name = ("d" + str(i + 1)),
+                    units = model_shape[i]["width"],
+                    activation = "relu",
+                    kernel_regularizer = regularizers.l2(regConst),
+                    kernel_initializer = "he_normal")(xd)
                 xd = tf.keras.layers.BatchNormalization(
-                    name=("batchnorm_" + str(i + 1))
-                )(xd)
+                    name = ("batchnorm_" + str(i + 1)))(xd)
 
-    # Project the vector onto a 3 unit output layer, and squash it with a
+    # Project the vector onto a 2 unit output layer, and squash it with a
     # sigmoid activation:
     # x_age_group will have decoded inputs
 
     x_age_group = tf.keras.layers.Dense(
-        name="age_group",
-        units=2,
-        activation="softmax",
+        name = "age_group",
+        units = 2,
+        activation = "softmax",
         #   activation = 'sigmoid',
-        kernel_regularizer=regularizers.l2(regConst),
-        kernel_initializer="he_normal",
-    )(xd)
+        kernel_regularizer = regularizers.l2(regConst),
+        kernel_initializer = "he_normal")(xd)
 
     outputs = []
     for i in ["x_age_group"]:
         outputs.append(locals()[i])
-    model = Model(inputs=input_vec, outputs=outputs)
+    model = Model(inputs = input_vec, outputs = outputs)
 
-    model.compile(loss=cce, metrics=["accuracy"], optimizer=sgd)
+    model.compile(
+                loss = cce, 
+                metrics = ["accuracy"], 
+                optimizer = sgd
+                )
+
     model.summary()
     return model
 
@@ -511,8 +507,8 @@ with open(
 # Select the important wavenumbers from the main dataframe
 
 new_data = X[
-    [wavenumber for wavenumber in X.columns if wavenumber in important_wavenumb]
-]
+            [wavenumber for wavenumber in X.columns if wavenumber in important_wavenumb]
+        ]
 
 print("shape of X : {}".format(new_data.shape))
 
@@ -545,10 +541,10 @@ age_group_classes = ["1-9", "10-16"]
 
 # Labels default - all classification
 labels_default, classes_default, outputs_default = (
-    [age_group],
-    [age_group_classes],
-    ["x_age_group"],
-)
+                                                    [age_group],
+                                                    [age_group_classes],
+                                                    ["x_age_group"],
+                                                )
 
 
 # %%
@@ -577,36 +573,44 @@ def train_models(model_to_test, save_path):
     #   model.summary()
 
     history = model.fit(
-        x=X_train,
-        y=y_train,
-        batch_size=256,
-        verbose=1,
-        epochs=8000,
-        validation_data=(X_val, y_val),
-        callbacks=[
-            tf.keras.callbacks.EarlyStopping(
-                monitor="val_loss", patience=400, verbose=1, mode="auto"
-            ),
-            CSVLogger(
-                save_path + model_name + "_" + str(model_ver_num) + ".csv",
-                append=True,
-                separator=";",
-            ),
-        ],
-    )
+                    x = X_train,
+                    y = y_train,
+                    batch_size = 256,
+                    verbose = 1,
+                    epochs = 8000,
+                    validation_data = (X_val, y_val),
+                    callbacks = [
+                                tf.keras.callbacks.EarlyStopping(
+                                                                monitor = "val_loss", 
+                                                                patience = 400, 
+                                                                verbose = 1, 
+                                                                mode = "auto"
+                                                                ),
+                                CSVLogger(
+                                        save_path 
+                                        + model_name 
+                                        + "_" 
+                                        + str(model_ver_num) 
+                                        + ".csv",
+                                        append = True,
+                                        separator = ";",
+                                    ),
+                                ],
+                        )
 
     model.save(
-        (
-            save_path
-            + model_name
-            + "_"
-            + str(model_ver_num)
-            + "_"
-            + str(fold)
-            + "_"
-            + "Model.h5"
+            (
+                save_path
+                + model_name
+                + "_"
+                + str(model_ver_num)
+                + "_"
+                + str(fold)
+                + "_"
+                + "Model.h5"
+            )
         )
-    )
+
     graph_history(history, model_name, model_ver_num, fold, save_path)
 
     return model, history
@@ -643,16 +647,16 @@ build_folder(outdir, False)
 #     width = option width of the layer
 
 model_size = [  # {'type':'c', 'filter':8, 'kernel':2, 'stride':1, 'pooling':1},
-    #  {'type':'c', 'filter':8, 'kernel':2, 'stride':1, 'pooling':1},
-    #  {'type':'c', 'filter':8, 'kernel':2, 'stride':1, 'pooling':1},
-    {"type": "d", "width": 500},
-    {"type": "d", "width": 500},
-    {"type": "d", "width": 500},
-    {"type": "d", "width": 500},
-    {"type": "d", "width": 500},
-    #  {'type':'d', 'width':500},
-    {"type": "d", "width": 500},
-]
+            #  {'type':'c', 'filter':8, 'kernel':2, 'stride':1, 'pooling':1},
+            #  {'type':'c', 'filter':8, 'kernel':2, 'stride':1, 'pooling':1},
+            {"type": "d", "width": 500},
+            {"type": "d", "width": 500},
+            {"type": "d", "width": 500},
+            {"type": "d", "width": 500},
+            {"type": "d", "width": 500},
+            #  {'type':'d', 'width':500},
+            {"type": "d", "width": 500},
+        ]
 
 
 # Name the model
@@ -664,7 +668,12 @@ label = labels_default
 
 num_folds = 5
 random_seed = np.random.randint(0, 81470)
-kf = KFold(n_splits=num_folds, shuffle=True, random_state=random_seed)
+
+kf = KFold(
+            n_splits = num_folds, 
+            shuffle = True, 
+            random_state = random_seed
+            )
 
 # Features
 features = X
@@ -690,17 +699,18 @@ for train_index, test_index in kf.split(features):
     # Split data into test and train
 
     X_train, X_test = features[train_index], features[test_index]
-    y_train, y_test = list(map(lambda y: y[train_index], label)), list(
-        map(lambda y: y[test_index], label)
-    )
+    y_train, y_test = list(map(lambda y: y[train_index], label)), list(map(lambda y: y[test_index], label))
 
     # Further divide training dataset into train and validation dataset
     # with an 90:10 split
 
     validation_size = 0.1
     X_train, X_val, y_train, y_val = train_test_split(
-        X_train, *y_train, test_size=validation_size, random_state=seed
-    )
+                                                    X_train, 
+                                                    *y_train, 
+                                                    test_size = validation_size, 
+                                                    random_state = seed
+                                                    )
 
     # expanding to one dimension, because the conv layer expcte to, 1
     X_train = X_train.reshape([X_train.shape[0], -1])
@@ -718,19 +728,19 @@ for train_index, test_index in kf.split(features):
     input_layer_dim = len(X[0])
 
     model_to_test = {
-        "model_shape": [model_size],  # defines the hidden layers of the model
-        "model_name": [model_name],
-        "input_layer_dim": [input_layer_dim],  # size of input layer
-        "model_ver_num": [0],
-        "fold": [fold],  # kf.split number on
-        "labels": [y_train],
-        "features": [X_train],
-        "classes": [classes_default],
-        "outputs": [outputs_default],
-        # "compile_loss": [{'age_group': 'categorical_crossentropy'}],
-        "compile_loss": [{"age_group": "binary_crossentropy"}],
-        "compile_metrics": [{"age_group": "accuracy"}],
-    }
+                    "model_shape": [model_size],  # defines the hidden layers of the model
+                    "model_name": [model_name],
+                    "input_layer_dim": [input_layer_dim],  # size of input layer
+                    "model_ver_num": [0],
+                    "fold": [fold],  # kf.split number on
+                    "labels": [y_train],
+                    "features": [X_train],
+                    "classes": [classes_default],
+                    "outputs": [outputs_default],
+                    # "compile_loss": [{'age_group': 'categorical_crossentropy'}],
+                    "compile_loss": [{"age_group": "binary_crossentropy"}],
+                    "compile_metrics": [{"age_group": "accuracy"}],
+                }
 
     # Call function to train all the models from the dictionary
     model, history = train_models(model_to_test, savedir)
@@ -760,15 +770,15 @@ for train_index, test_index in kf.split(features):
     # Plotting confusion matrix for each fold/iteration
 
     visualizeDL(
-        histories,
-        savedir,
-        model_name,
-        str(fold),
-        classes_default[0],
-        outputs_default,
-        y_predicted,
-        y_test,
-    )
+                histories,
+                savedir,
+                model_name,
+                str(fold),
+                classes_default[0],
+                outputs_default,
+                y_predicted,
+                y_test,
+            )
     # log_data(X_test, 'test_index', fold, savedir)
 
     fold += 1
@@ -789,16 +799,25 @@ print("save.true shape", save_true.shape)
 
 # Plotting an averaged confusion matrix
 
+sns.set(
+        context = "paper",
+        style = "white",
+        palette = "deep",
+        font_scale = 2.0,
+        color_codes = True,
+        rc = None,
+    )
+
 visualizeDL(
-    1,
-    savedir,
-    model_name,
-    "Averaged",
-    classes_default[0],
-    outputs_default,
-    save_predicted,
-    save_true,
-)
+            1,
+            savedir,
+            model_name,
+            "Averaged",
+            classes_default[0],
+            outputs_default,
+            save_predicted,
+            save_true,
+        )
 
 end_time = time()
 print("Run time : {} s".format(end_time - start_time))
@@ -821,6 +840,15 @@ with open(
 combn_dictionar_average = find_mean_from_combined_dicts(combn_dictionar)
 
 # Plot averaged histories
+sns.set(
+        context = "paper",
+        style = "white",
+        palette = "deep",
+        font_scale = 2.0,
+        color_codes = True,
+        rc = None,
+    )
+
 graph_history_averaged(combn_dictionar_average)
 
 # %%
@@ -943,14 +971,12 @@ labels_default_val, classes_default_val = [age_group_val], [age_group_classes_va
 # load trained model
 
 loaded_model = load_model(
-    "../Results/MLP_selectedwn/Training_Folder/lCNN_0_3_Model.h5"
-)
+                        "../Results/MLP_selectedwn/Training_Folder/lCNN_0_3_Model.h5"
+                    )
 
 # change the dimension of y_test to array
 y_validation = np.asarray(labels_default_val)
-y_validation = np.squeeze(
-    y_validation
-)  # remove any single dimension entries from the arrays
+y_validation = np.squeeze(y_validation)  # remove any single dimension entries from the arrays
 
 # generates output predictions based on the X_input passed
 
@@ -959,36 +985,63 @@ predictions = loaded_model.predict(age_valid)
 # computes the loss based on the X_input you passed, along with any other metrics requested in the metrics param
 # when model was compiled
 
-score = loaded_model.evaluate(age_valid, y_validation, verbose=1)
+score = loaded_model.evaluate(
+                            age_valid, 
+                            y_validation, 
+                            verbose = 1
+                            )
+
 print("Test loss:", score[0])
 print("Test accuracy:", score[1])
 
 # Calculating precision, recall and f-1 scores metrics for the predicted samples
 
 cr_1 = classification_report(
-    np.argmax(y_validation, axis=-1), np.argmax(predictions, axis=-1)
-)
+                            np.argmax(y_validation, axis = -1), 
+                            np.argmax(predictions, axis = -1)
+                            )
 print(cr_1)
+
+cm = confusion_matrix(
+                    np.argmax(y_validation, axis = -1), 
+                    np.argmax(predictions, axis = -1))
+
+cm = pd.DataFrame(
+                cm, 
+                index = ['Actual : 1-9 ','Actual : 10-16'], 
+                columns = ['Predict : 1-9','Predict :10-16']
+                )
+
+cm.to_csv("../Results/MLP_selectedwn/Training_Folder/cm.csv")
+
 
 # save classification report to disk
 cr = pd.read_fwf(io.StringIO(cr_1), header=0)
 cr = cr.iloc[0:]
 cr.to_csv(
     "../Results/MLP_selectedwn/Training_Folder/classification_report.csv"
-)
+    )
 
 # %%
 
 # Plot the confusion matrix for predicted samples
+sns.set(
+        context = "paper",
+        style = "white",
+        palette = "deep",
+        font_scale = 2.0,
+        color_codes = True,
+        rc = None,
+    )
 visualizeDL(
-    2,
-    savedir,
-    model_name,
-    "Test_set",
-    classes_default_val[0],
-    outputs_default,
-    predictions,
-    y_validation,
-)
+            2,
+            savedir,
+            model_name,
+            "Test_set",
+            classes_default_val[0],
+            outputs_default,
+            predictions,
+            y_validation,
+        )
 
 # %%

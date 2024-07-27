@@ -806,3 +806,233 @@ classes = np.unique(np.sort(y_valid))
 visualizeML(fig_name_2, outdir, classes, predictions, y_valid, ' ', ' ')
 
 # %%
+
+# Load Elisa data to see if we can use the infection data to predict age 
+elisa_df = pd.read_csv("C:\Mannu\Projects\Sporozoite Spectra for An funestus s.s\ML_final_analysis\Data\sporozoite_full.csv")
+elisa_df.head()
+
+# select only infected and unifected data from the dataframe
+infected = elisa_df.query("Sporozoite == 'Positive'")
+uninfected = elisa_df.query("Sporozoite == 'Negative'")
+
+# select only the wavenumbers from the dataframe
+infected = infected.iloc[:,7:] # for infected
+uninfected = uninfected.iloc[:,7:] # for uninfected
+
+# Scale data before making the predictions
+infected = scaler.transform(np.asarray(infected))
+uninfected = scaler.transform(np.asarray(uninfected))
+
+
+#%%
+
+# generates output predictions based on the X_input passed from new infection data, based on Elisa
+
+with open(
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-fullwn\classifier.pkl",
+    "rb",
+) as fid:
+    classifier_loaded = pickle.load(fid)
+
+# Make predictions on the new data for the infected
+predictions_inf = classifier_loaded.predict(infected)
+
+# Assuming predictions_inf is a NumPy array
+# Convert it to a list if it's not already
+predictions_inf_2 = predictions_inf.tolist() if isinstance(predictions_inf, np.ndarray) else predictions_inf
+
+# Count the occurrences of each predicted class
+label_counts = dict(Counter(predictions_inf_2))
+
+# Extract labels and counts for plotting
+labels = list(label_counts.keys())
+counts = list(label_counts.values())
+
+# Create a pie chart with percentages for infected predictions
+ig, ax = plt.subplots()
+wedges, texts, autotexts = ax.pie(
+                                counts, 
+                                labels = labels, 
+                                autopct='%1.1f%%', 
+                                startangle = 140
+                                )
+
+# Set the font weight of outside labels to 'bold'
+for text in texts:
+    text.set_fontweight('bold')
+
+# Adjust the layout to make room for the labels outside the pie chart
+plt.subplots_adjust(left = 0.0, right = 1.0, bottom = 0.1, top = 0.9)
+
+plt.title('Distribution of Predicted Classes')
+plt.show()
+
+
+#%%
+
+# Make predictions on the new data for the uninfected
+predictions_uninf = classifier_loaded.predict(uninfected)
+
+# Assuming predictions_inf is a NumPy array
+# Convert it to a list if it's not already
+predictions_uninf_2 = predictions_uninf.tolist() if isinstance(predictions_uninf, np.ndarray) else predictions_uninf
+
+# Count the occurrences of each predicted class
+label_counts_uninf = dict(Counter(predictions_uninf_2))
+
+# Extract labels and counts for plotting
+labels_uninf = list(label_counts_uninf.keys())
+counts_uninf = list(label_counts_uninf.values())
+
+# Create a pie chart with percentages for infected predictions
+plt.figure(figsize=(6, 6))
+
+fig, ax = plt.subplots()
+wedges, texts, autotexts = ax.pie(
+                                counts_uninf, 
+                                labels = labels_uninf, 
+                                autopct='%1.1f%%', 
+                                startangle = 140
+                                )
+
+# Set the font weight of outside labels to 'bold'
+for text in texts:
+    text.set_fontweight('bold')
+
+# Adjust the layout to make room for the labels outside the pie chart
+plt.subplots_adjust(left = 0.0, right = 1.0, bottom = 0.1, top = 0.9)
+
+plt.title('Distribution of Predicted Classes')
+plt.show()
+
+
+# %%
+
+# For PCR infection dataset
+# loading full spectra dataset
+
+full_data_df = pd.read_csv("C:\Mannu\Projects\Sporozoite Spectra for An funestus s.s\ML_final_analysis\Data\Biological_attr.dat", delimiter= '\t')
+
+# Selecting/subseting only head and thorax data
+
+head_and_thrx_df = full_data_df.query("Cat7 == 'HD'")
+print('The shape of head and thorax data : {}'.format(head_and_thrx_df.shape))
+
+#%%
+# Import PCR results which contains the ID's of positive mosquitoes
+ 
+pcr_data_df = pd.read_csv("C:\Mannu\Projects\Sporozoite Spectra for An funestus s.s\ML_final_analysis\Data\PCR data-35cycles-Cy5-FAM.csv")
+pcr_data_df.head()
+
+# Select a vector of sample ID from PCR data and use it to index all the positive 
+# from the head and thorax data
+
+positive_samples = pcr_data_df['Sample']
+positive_samples_df = head_and_thrx_df.query("ID in @positive_samples")
+
+# create a new column in positive samples dataframe and name the samples as positives
+positive_samples_df['infection_status'] = 'Positive'
+
+
+# Index all the negative from the head and thorax data
+# Select all rows not in the positive list
+
+negative_samples_df = head_and_thrx_df[~head_and_thrx_df['ID'].isin(list(positive_samples))]
+negative_samples_df['infection_status'] = 'Negative'
+
+# %%
+
+# Concatinating positive and negative dataframes together
+infection_data_df = pd.concat([positive_samples_df, negative_samples_df], axis = 0, join = 'outer')
+
+# drop unused columns
+infection_data_df = infection_data_df.drop(['ID', 'Cat2', 'Cat3', 'Cat4', 'Cat5', 'Cat6', 'Cat7', 'StoTime'], axis=1)
+
+# %%
+
+# select only infected and unifected data from the dataframe
+infected_pcr = infection_data_df.query("infection_status == 'Positive'")
+uninfected_pcr = infection_data_df.query("infection_status == 'Negative'")
+
+# select only the wavenumbers from the dataframe
+infected_pcr = infected_pcr.iloc[:,:-1] # for infected
+uninfected_pcr = uninfected_pcr.iloc[:,:-1] # for uninfected
+
+# Scale data before making the predictions
+infected_pcr = scaler.transform(np.asarray(infected_pcr))
+uninfected_pcr = scaler.transform(np.asarray(uninfected_pcr))
+
+# %%
+
+# Make predictions on the new data for the infected
+predictions_inf = classifier_loaded.predict(infected_pcr)
+
+# Assuming predictions_inf is a NumPy array
+# Convert it to a list if it's not already
+predictions_inf_2 = predictions_inf.tolist() if isinstance(predictions_inf, np.ndarray) else predictions_inf
+
+# Count the occurrences of each predicted class
+label_counts = dict(Counter(predictions_inf_2))
+
+# Extract labels and counts for plotting
+labels = list(label_counts.keys())
+counts = list(label_counts.values())
+
+# Create a pie chart with percentages for infected predictions
+ig, ax = plt.subplots()
+wedges, texts, autotexts = ax.pie(
+                                counts, 
+                                labels = labels, 
+                                autopct='%1.1f%%', 
+                                startangle = 140
+                                )
+
+# Set the font weight of outside labels to 'bold'
+for text in texts:
+    text.set_fontweight('bold')
+
+# Adjust the layout to make room for the labels outside the pie chart
+plt.subplots_adjust(left = 0.0, right = 1.0, bottom = 0.1, top = 0.9)
+
+plt.title('Distribution of Predicted Classes')
+plt.show()
+
+
+#%%
+
+# Make predictions on the new data for the uninfected
+predictions_uninf = classifier_loaded.predict(uninfected_pcr)
+
+# Assuming predictions_inf is a NumPy array
+# Convert it to a list if it's not already
+predictions_uninf_2 = predictions_uninf.tolist() if isinstance(predictions_uninf, np.ndarray) else predictions_uninf
+
+# Count the occurrences of each predicted class
+label_counts_uninf = dict(Counter(predictions_uninf_2))
+
+# Extract labels and counts for plotting
+labels_uninf = list(label_counts_uninf.keys())
+counts_uninf = list(label_counts_uninf.values())
+
+# Create a pie chart with percentages for infected predictions
+plt.figure(figsize=(6, 6))
+
+fig, ax = plt.subplots()
+wedges, texts, autotexts = ax.pie(
+                                counts_uninf, 
+                                labels = labels_uninf, 
+                                autopct='%1.1f%%', 
+                                startangle = 140
+                                )
+
+# Set the font weight of outside labels to 'bold'
+for text in texts:
+    text.set_fontweight('bold')
+
+# Adjust the layout to make room for the labels outside the pie chart
+plt.subplots_adjust(left = 0.0, right = 1.0, bottom = 0.1, top = 0.9)
+
+plt.title('Distribution of Predicted Classes')
+plt.show()
+
+# %%

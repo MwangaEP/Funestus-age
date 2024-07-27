@@ -651,3 +651,237 @@ classes = np.unique(np.sort(y_valid))
 visualizeML(fig_name_2, outdir, classes, predictions, y_valid, ' ', ' ')
 
 # %%
+
+
+
+elisa_df = pd.read_csv("C:\Mannu\Projects\Sporozoite Spectra for An funestus s.s\ML_final_analysis\Data\sporozoite_full.csv")
+elisa_df.head()
+
+#%%
+
+# data shape
+print(elisa_df.shape)
+
+# Checking class distribution abd correlation in the data
+Counter(elisa_df["Sporozoite"])
+
+age_group_sp = []
+
+for row in elisa_df['Sporozoite']:
+    if row == 'Negative':
+        age_group_sp.append('1-9')
+    else:
+        age_group_sp.append('10-16')
+
+elisa_df['Species'] = age_group_sp
+elisa_df.head(5)
+
+#%%
+# Select vector of labels and matrix of features
+
+X_val_elisa = elisa_df.iloc[:,7:] # matrix of features
+X_val_elisa = X_val_elisa[
+                [wavenumber for wavenumber in X_val_elisa.columns if wavenumber in important_wavenumb]
+            ]
+y_val_elisa = elisa_df["Species"] # vector of labels
+X_val_elisa
+
+#%%
+
+from imblearn.under_sampling import RandomUnderSampler, NearMiss
+
+# rescalling the data (undersampling the over respresented class - negative class)
+# rus = NearMiss(version = 2, n_neighbors = 3)
+rus = RandomUnderSampler()
+X_res_elisa, y_res_elisa = rus.fit_resample(X_val_elisa, y_val_elisa)
+print(collections.Counter(y_res_elisa))
+
+
+X_res_val_trans_elisa = scaler.transform(np.asarray(X_res_elisa))
+y_res_val_elisa = np.asarray(y_res_elisa)
+
+
+#%%
+
+# generates output predictions based on the X_input passed from PCR data
+
+with open(
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-selected wavenumbers\classifier.pkl",
+    "rb",
+) as fid:
+    classifier_loaded = pickle.load(fid)
+
+predictions_elisa = classifier_loaded.predict(X_res_val_trans_elisa)
+
+# Examine the accuracy of the model in predicting glasgow data 
+
+accuracy_elisa = accuracy_score(y_res_val_elisa, predictions_elisa)
+print("Accuracy:%.2f%%" %(accuracy_elisa * 100.0))
+
+def plot_confusion_matrix(cm, classes,
+                          normalize = True,
+                          title = 'Confusion matrix',
+                          xrotation=0,
+                          yrotation=0,
+                          cmap=plt.cm.Blues,
+                          printout = False):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        if printout:
+            print("Normalized confusion matrix")
+    else:
+        if printout:
+            print('Confusion matrix')
+
+    if printout:
+        print(cm)
+    
+    plt.figure(figsize=(6,4))
+
+    plt.imshow(cm, interpolation='nearest', vmin = .2, vmax= 1.0,  cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    classes = classes
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=xrotation)
+    plt.yticks(tick_marks, classes, rotation=yrotation)
+
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, format(cm[i, j], fmt),
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label', weight = 'bold')
+    plt.xlabel('Predicted label', weight = 'bold')
+
+class_names = np.unique(np.sort(y_res_val_elisa))
+cm_val_2 = confusion_matrix(y_res_val_elisa, predictions_elisa)
+plot_confusion_matrix(cm_val_2, normalize = True, classes = class_names)
+
+# %%
+
+# loading full spectra dataset
+
+full_data_df = pd.read_csv("C:\Mannu\Projects\Sporozoite Spectra for An funestus s.s\ML_final_analysis\Data\Biological_attr.dat", delimiter= '\t')
+full_data_df.head()
+
+#%%
+# checking data shape
+print(full_data_df.shape)
+
+# counting class distribution 
+Counter(full_data_df["Cat7"])
+
+#%%
+
+# Selecting/subseting only head and thorax data
+
+head_and_thrx_df = full_data_df.query("Cat7 == 'HD'")
+print('The shape of head and thorax data : {}'.format(head_and_thrx_df.shape))
+
+# Observe first few observations
+head_and_thrx_df.head()
+
+# %%
+
+# Import PCR results which contains the ID's of positive mosquitoes
+ 
+pcr_data_df = pd.read_csv("C:\Mannu\Projects\Sporozoite Spectra for An funestus s.s\ML_final_analysis\Data\PCR data-35cycles-Cy5-FAM.csv")
+pcr_data_df.head()
+
+# %%
+
+# Select a vector of sample ID from PCR data and use it to index all the positive 
+# from the head and thorax data
+
+positive_samples = pcr_data_df['Sample']
+positive_samples_df = head_and_thrx_df.query("ID in @positive_samples")
+
+# create a new column in positive samples dataframe and name the samples as positives
+positive_samples_df['infection_status'] = 'Positive'
+
+#%%
+
+# Index all the negative from the head and thorax data
+# Select all rows not in the positive list
+
+negative_samples_df = head_and_thrx_df[~head_and_thrx_df['ID'].isin(list(positive_samples))]
+negative_samples_df['infection_status'] = 'Negative'
+
+# %%
+
+# Concatinating positive and negative dataframes together
+infection_data_df = pd.concat([positive_samples_df, negative_samples_df], axis = 0, join = 'outer')
+# infection_data_df.to_csv("C:\Mannu\Projects\Sporozoite Spectra for An funestus s.s\Phd data\Analysis data\infection_data.csv")
+infection_data_df
+
+# %%
+
+infection_data_df = infection_data_df.drop(['ID', 'Cat2', 'Cat3', 'Cat4', 'Cat5', 'Cat6', 'Cat7', 'StoTime'], axis=1)
+
+
+# Checking class distribution abd correlation in the data
+Counter(infection_data_df["infection_status"])
+
+age_group_sp = []
+
+for row in infection_data_df['infection_status']:
+    if row == 'Negative':
+        age_group_sp.append('1-9')
+    else:
+        age_group_sp.append('10-16')
+
+infection_data_df['infection_status'] = age_group_sp
+infection_data_df.head(5)
+
+
+# %%
+
+# define X (matrix of features) and y (list of labels)
+
+X = infection_data_df.iloc[:,:-1] # select all columns except the last one 
+y = infection_data_df["infection_status"]
+
+print('shape of X : {}'.format(X.shape))
+print('shape of y : {}'.format(y.shape))
+
+# rescalling the data (undersampling the over respresented class - negative class)
+
+# rus = NearMiss(version = 2, n_neighbors = 3)
+rus = RandomUnderSampler()
+X_res, y_res = rus.fit_resample(X, y)
+y_res_count = collections.Counter(y_res)
+print(y_res_count)
+
+
+# %%
+
+X_res = scaler.transform(np.asarray(X_res))
+y_res = np.asarray(y_res)
+
+# generates output predictions based on the X_input passed from PCR data
+
+with open(
+    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML-fullwn\classifier.pkl",
+    "rb",
+) as fid:
+    classifier_loaded = pickle.load(fid)
+
+predictions = classifier_loaded.predict(X_res)
+
+# Examine the accuracy of the model in predicting glasgow data 
+
+accuracy = accuracy_score(y_res, predictions)
+print("Accuracy:%.2f%%" %(accuracy * 100))
+
+# %%
+
+cm_val_3 = confusion_matrix(y_res, predictions)
+plot_confusion_matrix(cm_val_3, normalize = True, classes = class_names)
