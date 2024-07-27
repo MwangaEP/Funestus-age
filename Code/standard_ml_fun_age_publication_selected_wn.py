@@ -4,6 +4,7 @@
 
 # import all libraries
 import os
+import os.path
 import io
 import json
 import ast
@@ -205,9 +206,7 @@ y = train_data["Age_group"]
 print("shape of X : {}".format(X.shape))
 print("shape of y : {}".format(y.shape))
 
-with open(
-    "../Data/important_wavenumbers.txt"
-) as json_file:
+with open("../Data/important_wavenumbers.txt") as json_file:
     important_wavenumb = json.load(json_file)
 
 # Select the important wavenumbers from the main dataframe
@@ -382,7 +381,7 @@ outdir = "../Results/ML_selectedwn/"
 
 fig_name = "validation-training"
 classes = np.unique(np.sort(y))
-visualizeML(fig_name, outdir, classes, save_predicted, save_true, ' ', ' ')
+visualizeML(fig_name, outdir, classes, save_predicted, save_true, " ", " ")
 
 
 # %%
@@ -406,7 +405,7 @@ visualizeML(fig_name, outdir, classes, save_predicted, save_true, ' ', ' ')
 # plt.xlabel('Epochs', weight = 'bold')
 # plt.ylabel('Classification Error rate', weight = 'bold')
 # # plt.title('XGBoost learning curve', weight = 'bold')
-# plt.savefig(('C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\std_ML\XGB_learning_curve.png'), dpi = 500, bbox_inches = 'tight')
+# plt.savefig(('C:/Mannu/Projects/Anophles Funestus Age Grading (WILD)/std_ML/XGB_learning_curve.png'), dpi = 500, bbox_inches = 'tight')
 
 
 # %%
@@ -417,9 +416,7 @@ kf_results.to_csv(
     "../Results/ML_selectedwn/crf_kfCV_record.csv",
     index=False,
 )
-kf_results = pd.read_csv(
-    "../Results/ML_selectedwn/crf_kfCV_record.csv"
-)
+kf_results = pd.read_csv("../Results/ML_selectedwn/crf_kfCV_record.csv")
 
 # Accuracy distribution
 crf_acc_distrib = kf_results["Accuracy"]
@@ -429,9 +426,7 @@ crf_acc_distrib.to_csv(
     header=True,
     index=False,
 )
-crf_acc_distrib = pd.read_csv(
-    "../Results/ML_selectedwn/crf_acc_distrib.csv"
-)
+crf_acc_distrib = pd.read_csv("../Results/ML_selectedwn/crf_acc_distrib.csv")
 crf_acc_distrib = np.round(crf_acc_distrib, 2)
 print(crf_acc_distrib)
 
@@ -456,26 +451,26 @@ rf_per_class_acc_distrib_describe.to_csv(
 # %%
 # plotting class distribution
 sns.set(
-    context = "paper",
-    style = "white",
-    palette = "deep",
-    font_scale = 2.0,
-    color_codes = True,
-    rc = ({"font.family": "Helvetica"}),
+    context="paper",
+    style="white",
+    palette="deep",
+    font_scale=2.0,
+    color_codes=True,
+    rc=({"font.family": "Helvetica"}),
 )
 
-plt.figure(figsize = (6, 4))
+plt.figure(figsize=(6, 4))
 
 rf_per_class_acc_distrib = pd.melt(rf_per_class_acc_distrib, var_name="Label new")
-sns.violinplot(x = "Label new", y = "value", data = rf_per_class_acc_distrib)
-sns.despine(left = True)
+sns.violinplot(x="Label new", y="value", data=rf_per_class_acc_distrib)
+sns.despine(left=True)
 
-plt.xticks(ha = "right")
+plt.xticks(ha="right")
 plt.yticks()
-plt.ylim(ymin = 0.2, ymax = 1.0)
+plt.ylim(ymin=0.2, ymax=1.0)
 plt.xlabel(" ")
 # plt.legend(' ', frameon = False)
-plt.ylabel("Prediction accuracy", weight = "bold")
+plt.ylabel("Prediction accuracy", weight="bold")
 plt.grid(False)
 plt.tight_layout()
 # plt.savefig(
@@ -488,9 +483,7 @@ plt.tight_layout()
 
 # save the trained model to disk for future use
 
-with open(
-    "../Results/ML_selectedwn/classifier.pkl", "wb"
-) as fid:
+with open("../Results/ML_selectedwn/classifier.pkl", "wb") as fid:
     pickle.dump(classifier, fid)
 
 
@@ -639,16 +632,14 @@ print(cr_report)
 
 cr = pd.read_fwf(io.StringIO(cr_report), header=0)
 cr = cr.iloc[0:]
-cr.to_csv(
-    "../Results/ML_selectedwn/classification_report_.csv"
-)
+cr.to_csv("../Results/ML_selectedwn/classification_report_.csv")
 
 # %%
 
 # plot the confusion matrix for the test data (glasgow data)
 fig_name_2 = "test_set"
 classes = np.unique(np.sort(y_valid))
-visualizeML(fig_name_2, outdir, classes, predictions, y_valid, ' ', ' ')
+visualizeML(fig_name_2, outdir, classes, predictions, y_valid, " ", " ")
 
 # %%
 

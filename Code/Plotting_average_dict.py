@@ -144,7 +144,7 @@ def graph_history_averaged(combined_history):
     plt.tight_layout()
     plt.grid(False)
     plt.savefig(
-        "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_selected_wns\Averaged_graph_2.png",
+        "C:/Mannu/Projects/Anophles Funestus Age Grading (WILD)/Fold/Training_Folder_selected_wns/Averaged_graph_2.png",
         dpi=500,
         bbox_inches="tight",
     )
@@ -154,7 +154,7 @@ def graph_history_averaged(combined_history):
 # %%
 
 with open(
-    "C:\Mannu\Projects\Anophles Funestus Age Grading (WILD)\Fold\Training_Folder_selected_wns\combined_history_dictionaries.txt"
+    "C:/Mannu/Projects/Anophles Funestus Age Grading (WILD)/Fold/Training_Folder_selected_wns/combined_history_dictionaries.txt"
 ) as json_file:
     combined_dictionary = json.load(json_file)
 

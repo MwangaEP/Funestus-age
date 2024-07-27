@@ -5,6 +5,7 @@
 # %%
 
 import os
+import os.path
 import io
 import ast
 import itertools
@@ -248,10 +249,17 @@ def graph_history_averaged(combined_history):
     plt.tight_layout()
     plt.grid(False)
     plt.savefig(
+<<<<<<< HEAD
                 "../Results/MLP_selectedwn/Training_Folder/Averaged_graph.png",
                 dpi = 500,
                 bbox_inches = "tight",
             )
+=======
+        "../Results/MLP_selectedwn/Training_Folder/Averaged_graph.png",
+        dpi=500,
+        bbox_inches="tight",
+    )
+>>>>>>> ee3ea31d123a6b603ea79b6c2d02a76868ac0386
     plt.close()
 
 
@@ -499,9 +507,7 @@ seed = 42
 
 # load important wavenumbers stored in the disk
 
-with open(
-    "../Data/important_wavenumbers.txt"
-) as json_file:
+with open("../Data/important_wavenumbers.txt") as json_file:
     important_wavenumb = json.load(json_file)
 
 # Select the important wavenumbers from the main dataframe
@@ -573,6 +579,7 @@ def train_models(model_to_test, save_path):
     #   model.summary()
 
     history = model.fit(
+<<<<<<< HEAD
                     x = X_train,
                     y = y_train,
                     batch_size = 256,
@@ -597,6 +604,25 @@ def train_models(model_to_test, save_path):
                                     ),
                                 ],
                         )
+=======
+        x=X_train,
+        y=y_train,
+        batch_size=256,
+        verbose=1,
+        epochs=8000,
+        validation_data=(X_val, y_val),
+        callbacks=[
+            tf.keras.callbacks.EarlyStopping(
+                monitor="val_loss", patience=100, verbose=1, mode="auto"
+            ),
+            CSVLogger(
+                save_path + model_name + "_" + str(model_ver_num) + ".csv",
+                append=True,
+                separator=";",
+            ),
+        ],
+    )
+>>>>>>> ee3ea31d123a6b603ea79b6c2d02a76868ac0386
 
     model.save(
             (
@@ -685,9 +711,9 @@ train_model = True
 
 # Name a folder for the outputs to go into
 
-savedir = outdir + "\Training_Folder"
+savedir = outdir + "/Training_Folder"
 build_folder(savedir, True)
-savedir = outdir + "\Training_Folder\l"
+savedir = outdir + "/Training_Folder/l"
 
 # start model training on standardized data
 
@@ -970,9 +996,13 @@ labels_default_val, classes_default_val = [age_group_val], [age_group_classes_va
 
 # load trained model
 
+<<<<<<< HEAD
 loaded_model = load_model(
                         "../Results/MLP_selectedwn/Training_Folder/lCNN_0_3_Model.h5"
                     )
+=======
+loaded_model = load_model("../Results/MLP_selectedwn/Training_Folder/lCNN_0_3_Model.h5")
+>>>>>>> ee3ea31d123a6b603ea79b6c2d02a76868ac0386
 
 # change the dimension of y_test to array
 y_validation = np.asarray(labels_default_val)
@@ -1018,9 +1048,13 @@ cm.to_csv("../Results/MLP_selectedwn/Training_Folder/cm.csv")
 # save classification report to disk
 cr = pd.read_fwf(io.StringIO(cr_1), header=0)
 cr = cr.iloc[0:]
+<<<<<<< HEAD
 cr.to_csv(
     "../Results/MLP_selectedwn/Training_Folder/classification_report.csv"
     )
+=======
+cr.to_csv("../Results/MLP_selectedwn/Training_Folder/classification_report.csv")
+>>>>>>> ee3ea31d123a6b603ea79b6c2d02a76868ac0386
 
 # %%
 
