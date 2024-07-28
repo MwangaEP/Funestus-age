@@ -249,17 +249,10 @@ def graph_history_averaged(combined_history):
     plt.tight_layout()
     plt.grid(False)
     plt.savefig(
-<<<<<<< HEAD
-                "../Results/MLP_selectedwn/Training_Folder/Averaged_graph.png",
-                dpi = 500,
-                bbox_inches = "tight",
-            )
-=======
         "../Results/MLP_selectedwn/Training_Folder/Averaged_graph.png",
         dpi=500,
         bbox_inches="tight",
     )
->>>>>>> ee3ea31d123a6b603ea79b6c2d02a76868ac0386
     plt.close()
 
 
@@ -579,7 +572,6 @@ def train_models(model_to_test, save_path):
     #   model.summary()
 
     history = model.fit(
-<<<<<<< HEAD
                     x = X_train,
                     y = y_train,
                     batch_size = 256,
@@ -604,25 +596,6 @@ def train_models(model_to_test, save_path):
                                     ),
                                 ],
                         )
-=======
-        x=X_train,
-        y=y_train,
-        batch_size=256,
-        verbose=1,
-        epochs=8000,
-        validation_data=(X_val, y_val),
-        callbacks=[
-            tf.keras.callbacks.EarlyStopping(
-                monitor="val_loss", patience=100, verbose=1, mode="auto"
-            ),
-            CSVLogger(
-                save_path + model_name + "_" + str(model_ver_num) + ".csv",
-                append=True,
-                separator=";",
-            ),
-        ],
-    )
->>>>>>> ee3ea31d123a6b603ea79b6c2d02a76868ac0386
 
     model.save(
             (
@@ -1048,13 +1021,7 @@ cm.to_csv("../Results/MLP_selectedwn/Training_Folder/cm.csv")
 # save classification report to disk
 cr = pd.read_fwf(io.StringIO(cr_1), header=0)
 cr = cr.iloc[0:]
-<<<<<<< HEAD
-cr.to_csv(
-    "../Results/MLP_selectedwn/Training_Folder/classification_report.csv"
-    )
-=======
 cr.to_csv("../Results/MLP_selectedwn/Training_Folder/classification_report.csv")
->>>>>>> ee3ea31d123a6b603ea79b6c2d02a76868ac0386
 
 # %%
 
